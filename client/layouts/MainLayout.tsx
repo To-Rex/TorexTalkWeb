@@ -56,7 +56,7 @@ export default function MainLayout({
                 Yopish
               </button>
             </div>
-            <NavMenu />
+            <NavMenu variant="overlay" />
           </div>
         </div>
       ) : null}
