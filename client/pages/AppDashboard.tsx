@@ -270,3 +270,38 @@ export default function AppDashboard() {
     </div>
   );
 }
+
+function MobileActions({
+  onAdd,
+  onMass,
+  onTemplates,
+  onSettings,
+  onAccounts,
+}: {
+  onAdd: () => void;
+  onMass: () => void;
+  onTemplates: () => void;
+  onSettings: () => void;
+  onAccounts: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="rounded-md border px-2 py-2 hover:bg-accent/40"
+          aria-label="Amallar"
+          title="Amallar"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onAccounts}>Hozirgi hisob</DropdownMenuItem>
+        <DropdownMenuItem onClick={onAdd}>Hisob qo'shish</DropdownMenuItem>
+        <DropdownMenuItem onClick={onMass}>Mass xabar</DropdownMenuItem>
+        <DropdownMenuItem onClick={onTemplates}>Shablonlar</DropdownMenuItem>
+        <DropdownMenuItem onClick={onSettings}>Sozlamalar</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
