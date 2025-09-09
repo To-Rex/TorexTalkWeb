@@ -9,9 +9,11 @@ import TemplatesManager from "@/components/TemplatesManager";
 import SettingsModal from "@/components/SettingsModal";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function AppDashboard() {
   const { user, switchAccount } = useAuth();
+  const isMobile = useIsMobile();
   const [otpOpen, setOtpOpen] = useState(false);
   const [massOpen, setMassOpen] = useState(false);
   const [accountsOpen, setAccountsOpen] = useState(false);
