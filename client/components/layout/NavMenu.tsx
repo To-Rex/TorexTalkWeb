@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/auth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function NavMenu() {
+export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" | "overlay" }) {
   const location = useLocation();
   const { user, switchAccount } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -13,6 +13,7 @@ export default function NavMenu() {
       return false;
     }
   });
+  const isOverlay = variant === "overlay";
 
   useEffect(() => {
     try {
@@ -20,12 +21,12 @@ export default function NavMenu() {
     } catch {}
   }, [collapsed]);
 
-  const asideWidth = collapsed ? "w-16" : "w-64 sm:w-72";
-  const itemLayout = collapsed ? "justify-center gap-0" : "gap-3";
-  const showText = !collapsed;
+  const asideWidth = isOverlay ? "w-full" : collapsed ? "w-16" : "w-64 sm:w-72";
+  const itemLayout = isOverlay ? "gap-3" : collapsed ? "justify-center gap-0" : "gap-3";
+  const showText = isOverlay ? true : !collapsed;
 
   return (
-    <aside className={`${asideWidth} bg-sidebar p-3 border-r flex flex-col gap-4`}>
+    <aside className={`${asideWidth} bg-sidebar p-3 border-r flex flex-col gap-4 h-full`}>
       <div className="flex items-center justify-between">
         <div className={`flex items-center ${itemLayout} flex-1`}>
           <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold">
@@ -38,17 +39,19 @@ export default function NavMenu() {
             </div>
           ) : null}
         </div>
-        <button
-          onClick={() => setCollapsed((v) => !v)}
-          className="ml-2 inline-flex items-center justify-center rounded-md p-2 text-sm hover:bg-background"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Kengaytirish" : "Qisqartirish"}
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        {!isOverlay ? (
+          <button
+            onClick={() => setCollapsed((v) => !v)}
+            className="ml-2 inline-flex items-center justify-center rounded-md p-2 text-sm hover:bg-background"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Kengaytirish" : "Qisqartirish"}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        ) : null}
       </div>
 
-      <nav className="flex flex-col gap-2">
+      <nav className="flex flex-col gap-2 overflow-auto">
         <Link
           to="/app"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
@@ -115,7 +118,7 @@ export default function NavMenu() {
         </Link>
       </nav>
 
-      <div className="mt-auto">
+      <div className="mt-auto pt-2 border-t">
         {showText ? (
           <div className="text-xs text-muted-foreground mb-2">Accounts</div>
         ) : null}
