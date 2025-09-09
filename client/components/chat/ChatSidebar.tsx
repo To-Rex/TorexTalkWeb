@@ -47,7 +47,7 @@ export default function ChatSidebar({
     : [];
 
   return (
-    <aside className="w-full md:w-64 lg:w-72 border-r bg-secondary/30">
+    <aside className="w-full md:w-64 lg:w-72 border-r bg-secondary/30 flex flex-col h-full">
       <div className="p-3 flex gap-2">
         <button
           onClick={() => setTab("private")}
@@ -84,7 +84,7 @@ export default function ChatSidebar({
         </div>
       </div>
 
-      <div className="p-2 space-y-1 max-h-[calc(100vh-18rem)] sm:max-h-[calc(100vh-14rem)] overflow-auto">
+      <div className="p-2 space-y-1 flex-1 overflow-auto min-h-0">
         {filtered.map((c) => (
           <button
             key={c.id}
