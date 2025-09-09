@@ -18,29 +18,26 @@ export default function AppDashboard() {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const chats: ChatItem[] = useMemo(
-    () => [
-      {
-        id: "1",
-        name: "Ali",
-        type: "private",
-        unread: 1,
-        avatar: "/placeholder.svg",
-      },
-      { id: "2", name: "Nodira", type: "private", avatar: "/placeholder.svg" },
-      { id: "3", name: "Jamshid", type: "private", avatar: "/placeholder.svg" },
-      { id: "4", name: "Support", type: "private", avatar: "/placeholder.svg" },
-      {
-        id: "5",
-        name: "Marketing",
-        type: "group",
-        unread: 12,
-        avatar: "/placeholder.svg",
-      },
-      { id: "6", name: "Savdo", type: "group", avatar: "/placeholder.svg" },
-    ],
-    [],
-  );
+  const [chats, setChats] = useState<ChatItem[]>([
+    {
+      id: "1",
+      name: "Ali",
+      type: "private",
+      unread: 1,
+      avatar: "/placeholder.svg",
+    },
+    { id: "2", name: "Nodira", type: "private", avatar: "/placeholder.svg" },
+    { id: "3", name: "Jamshid", type: "private", avatar: "/placeholder.svg" },
+    { id: "4", name: "Support", type: "private", avatar: "/placeholder.svg" },
+    {
+      id: "5",
+      name: "Marketing",
+      type: "group",
+      unread: 12,
+      avatar: "/placeholder.svg",
+    },
+    { id: "6", name: "Savdo", type: "group", avatar: "/placeholder.svg" },
+  ]);
 
   // messages keyed by chat id
   const [messages, setMessages] = useState<Record<string, Message[]>>({
@@ -60,9 +57,7 @@ export default function AppDashboard() {
     ],
   });
 
-  const [currentId, setCurrentId] = useState<string | null>(
-    chats[0]?.id ?? null,
-  );
+  const [currentId, setCurrentId] = useState<string | null>("1");
 
   // if user has activeAccountId, show it
   const activeAccount =
@@ -124,6 +119,20 @@ export default function AppDashboard() {
     });
   };
 
+  const onCreateChat = ({ name, type }: { name: string; type: "private" | "group" }) => {
+    // Avoid duplicates by name/type
+    const exists = chats.find((c) => c.name === name && c.type === type);
+    if (exists) {
+      setCurrentId(exists.id);
+      return;
+    }
+    const id = Math.random().toString(36).slice(2);
+    const item: ChatItem = { id, name, type, avatar: "/placeholder.svg" };
+    setChats((prev) => [...prev, item]);
+    setMessages((prev) => ({ ...prev, [id]: [] }));
+    setCurrentId(id);
+  };
+
   return (
     <div className="container py-6">
       <div className="mb-3 flex items-center justify-between">
@@ -173,6 +182,7 @@ export default function AppDashboard() {
           chats={chats}
           currentId={currentId}
           onSelect={setCurrentId}
+          onCreateChat={onCreateChat}
         />
         <div className="flex flex-col min-h-[50vh]">
           <ChatWindow
