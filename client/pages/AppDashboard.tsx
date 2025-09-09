@@ -144,7 +144,7 @@ export default function AppDashboard() {
   return (
     <div className="container py-6">
       <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <button
             onClick={() => setAccountsOpen(true)}
             className="inline-flex flex-col text-sm text-left hover:opacity-90"
@@ -181,7 +181,19 @@ export default function AppDashboard() {
             Sozlamalar
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="md:hidden flex items-center gap-2">
+          <div className="text-xs text-muted-foreground">
+            {activeAccount ? activeAccount.name : "Hisob yo'q"}
+          </div>
+          <MobileActions
+            onAdd={() => setOtpOpen(true)}
+            onMass={() => setMassOpen(true)}
+            onTemplates={() => setTemplatesOpen(true)}
+            onSettings={() => setSettingsOpen(true)}
+            onAccounts={() => setAccountsOpen(true)}
+          />
+        </div>
+        <div className="text-xs text-muted-foreground hidden sm:block">
           Offline rejim qo'llab-quvvatlanadi
         </div>
       </div>
@@ -194,31 +206,37 @@ export default function AppDashboard() {
             onCreateChat={onCreateChat}
           />
           <div className="flex flex-col min-h-[50vh]">
-            <ChatWindow
-              title={currentName}
-              status="online"
-              messages={currentMessages}
-            />
-            <MessageComposer onSend={send} />
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl border overflow-hidden min-h-[70vh]">
-          {!currentId ? (
-            <ChatSidebar
-              chats={chats}
-              currentId={null}
-              onSelect={setCurrentId}
-              onCreateChat={onCreateChat}
-            />
-          ) : (
-            <div className="flex flex-col min-h-[70vh]">
+            <div className="flex-1 min-h-0">
               <ChatWindow
                 title={currentName}
                 status="online"
                 messages={currentMessages}
-                onBack={() => setCurrentId(null)}
               />
+            </div>
+            <MessageComposer onSend={send} />
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border overflow-hidden min-h-[70vh] flex flex-col">
+          {!currentId ? (
+            <div className="flex-1 min-h-0">
+              <ChatSidebar
+                chats={chats}
+                currentId={null}
+                onSelect={setCurrentId}
+                onCreateChat={onCreateChat}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col min-h-[70vh]">
+              <div className="flex-1 min-h-0">
+                <ChatWindow
+                  title={currentName}
+                  status="online"
+                  messages={currentMessages}
+                  onBack={() => setCurrentId(null)}
+                />
+              </div>
               <MessageComposer onSend={send} />
             </div>
           )}
