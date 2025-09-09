@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ChatSidebar, { ChatItem } from "@/components/chat/ChatSidebar";
 import ChatWindow, { Message } from "@/components/chat/ChatWindow";
 import MessageComposer from "@/components/chat/MessageComposer";
