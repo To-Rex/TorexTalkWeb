@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/auth";
+import { ArrowLeft } from "lucide-react";
 
 export interface FileAttachment {
   type: "image" | "audio";
@@ -19,10 +20,12 @@ export default function ChatWindow({
   title,
   status,
   messages,
+  onBack,
 }: {
   title: string;
   status: string;
   messages: Message[];
+  onBack?: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { user, addToBlocklist, removeFromBlocklist } = useAuth();
@@ -57,6 +60,16 @@ export default function ChatWindow({
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between border-b px-4 py-2">
         <div className="font-medium flex items-center gap-3">
+          {onBack ? (
+            <button
+              className="md:hidden -ml-2 mr-1 inline-flex items-center justify-center rounded p-2 hover:bg-accent/40"
+              onClick={onBack}
+              aria-label="Orqaga"
+              title="Orqaga"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          ) : null}
           <div>{title}</div>
           <div className="text-xs text-muted-foreground">{status}</div>
         </div>
