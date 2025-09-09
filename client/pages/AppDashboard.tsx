@@ -10,6 +10,13 @@ import SettingsModal from "@/components/SettingsModal";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 
 export default function AppDashboard() {
   const { user, switchAccount } = useAuth();
