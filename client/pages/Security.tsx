@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { ShieldCheck, Lock, KeyRound, Database, Activity, AlertTriangle } from "lucide-react";
-import { motion } from "framer-motion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
