@@ -5,7 +5,6 @@ import { useI18n } from "@/i18n";
 import { useAuth } from "@/auth";
 import AdminLoginModal from "@/components/AdminLoginModal";
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Header({
   onOpenMobileNav,
