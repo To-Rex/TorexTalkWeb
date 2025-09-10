@@ -58,7 +58,7 @@ export default function ChatWindow({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between border-b px-4 py-2">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-2 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="font-medium flex items-center gap-3">
           {onBack ? (
             <button
