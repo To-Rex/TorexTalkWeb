@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/auth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" | "overlay" }) {
   const location = useLocation();
