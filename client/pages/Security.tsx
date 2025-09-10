@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { ShieldCheck, Lock, KeyRound, Database, Activity, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
-  show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.5, ease: "easeOut" } }),
+  show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.5 } }),
 };
 
 const Card = ({ icon: Icon, title, text, i = 0 }: { icon: any; title: string; text: string; i?: number }) => (
