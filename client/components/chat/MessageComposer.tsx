@@ -1,5 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Paperclip, Mic, Send, X } from "lucide-react";
 
 export type Outgoing = {
   text?: string;
@@ -12,21 +14,13 @@ export default function MessageComposer({
   onSend: (payload: Outgoing) => void;
 }) {
   const [text, setText] = useState("");
-  const [when, setWhen] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedType, setSelectedType] = useState<"image" | "audio" | null>(
     null,
   );
-  const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const templates = useMemo(
-    () => [
-      "Salom! Sizga qanday yordam bera olaman?",
-      "Rahmat! Tez orada aloqaga chiqamiz.",
-      "Bugungi taklif: chegirma 20% faqat bugun!",
-    ],
-    [],
-  );
+  const imgRef = useRef<HTMLInputElement | null>(null);
+  const audioRef = useRef<HTMLInputElement | null>(null);
 
   const handleSend = () => {
     if (!text.trim() && !selectedFile) return;
@@ -37,15 +31,19 @@ export default function MessageComposer({
       onSend({ text: text.trim() });
     }
     setText("");
-    setWhen("");
     setSelectedFile(null);
     setSelectedType(null);
-    if (fileRef.current) fileRef.current.value = "";
+    if (imgRef.current) imgRef.current.value = "";
+    if (audioRef.current) audioRef.current.value = "";
   };
 
-  const pickFile = (type: "image" | "audio") => {
-    setSelectedType(type);
-    fileRef.current?.click();
+  const onPickImage = () => {
+    setSelectedType("image");
+    imgRef.current?.click();
+  };
+  const onPickAudio = () => {
+    setSelectedType("audio");
+    audioRef.current?.click();
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,117 +52,98 @@ export default function MessageComposer({
     setSelectedFile(f);
   };
 
+  const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <div className="border-t bg-background/60 p-3 flex flex-col gap-2">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <select
-          onChange={(e) => setText(e.target.value)}
-          className="rounded-md bg-secondary px-2 py-2 text-xs w-full sm:w-auto"
-          defaultValue=""
-        >
-          <option value="" disabled>
-            Shablonni tanlang
-          </option>
-          {templates.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+    <div className="border-t bg-background/80 supports-[backdrop-filter]:bg-background/60 backdrop-blur p-3 sticky bottom-0 z-10">
+      <div className="flex items-center gap-2">
         <input
-          type="datetime-local"
-          value={when}
-          onChange={(e) => setWhen(e.target.value)}
-          className="rounded-md bg-secondary px-3 py-2 text-xs w-full sm:w-auto"
-        />
-        <label className="text-xs text-muted-foreground">
-          {when ? "Rejalashtirilgan" : "Darhol"}
-        </label>
-      </div>
-
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <input
-          className="flex-1 rounded-md bg-secondary px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Xabar yozing..."
-        />
-
-        <input
-          ref={fileRef}
+          ref={imgRef}
           onChange={onFileChange}
           type="file"
-          accept="image/*,audio/*"
+          accept="image/*"
+          className="hidden"
+        />
+        <input
+          ref={audioRef}
+          onChange={onFileChange}
+          type="file"
+          accept="audio/*"
           className="hidden"
         />
 
-        <div className="flex items-center gap-2">
-          <button
-            title="Rasm qo'shish"
-            onClick={() => pickFile("image")}
-            className="h-9 w-9 rounded-full bg-secondary grid place-items-center hover:bg-secondary/80"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-muted-foreground"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 7a4 4 0 014-4h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7z"
-              />
-              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-              <path
-                d="M21 15l-5-5-7 7"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          onClick={onPickImage}
+          title="Fayl tanlash"
+          aria-label="Fayl tanlash"
+          className="shrink-0"
+        >
+          <Paperclip className="h-4 w-4" />
+        </Button>
 
-          <button
-            title="Audio qo'shish"
-            onClick={() => pickFile("audio")}
-            className="h-9 w-9 rounded-full bg-secondary grid place-items-center hover:bg-secondary/80"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-muted-foreground"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 19a3 3 0 003-3V8a3 3 0 00-6 0v8a3 3 0 003 3z"
-              />
-              <path
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 11v2a7 7 0 01-14 0v-2"
-              />
-            </svg>
-          </button>
-        </div>
+        <Input
+          className="flex-1"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Xabar yozing..."
+        />
 
-        <Button onClick={handleSend} className="sm:ml-2 w-full sm:w-auto">
-          Yuborish
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          onClick={onPickAudio}
+          title="Audio"
+          aria-label="Audio"
+          className="shrink-0"
+        >
+          <Mic className="h-4 w-4" />
+        </Button>
+
+        <Button
+          type="button"
+          size="icon"
+          onClick={handleSend}
+          title="Yuborish"
+          aria-label="Yuborish"
+          className="shrink-0"
+        >
+          <Send className="h-4 w-4" />
         </Button>
       </div>
 
       {selectedFile ? (
-        <div className="mt-2 text-sm text-muted-foreground">
-          Tanlangan fayl: {selectedFile.name} ({selectedType})
+        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="truncate">{selectedFile.name}</span>
+          <span className="rounded border px-1.5 py-0.5 text-[10px]">
+            {selectedType}
+          </span>
+          <button
+            onClick={() => {
+              setSelectedFile(null);
+              setSelectedType(null);
+              if (imgRef.current) imgRef.current.value = "";
+              if (audioRef.current) audioRef.current.value = "";
+            }}
+            className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] hover:bg-accent/40"
+            aria-label="Faylni o'chirish"
+            title="Faylni o'chirish"
+          >
+            <X className="h-3 w-3" /> O'chirish
+          </button>
         </div>
       ) : null}
+
+      <div className="pt-[env(safe-area-inset-bottom)]" />
     </div>
   );
 }
