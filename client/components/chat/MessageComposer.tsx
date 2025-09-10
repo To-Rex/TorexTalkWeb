@@ -16,27 +16,55 @@ export default function MessageComposer({
   onSend: (payload: Outgoing) => void;
 }) {
   const [text, setText] = useState("");
+  const [when, setWhen] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedType, setSelectedType] = useState<"image" | "audio" | null>(
     null,
   );
 
+  const templates = [
+    "Salom! Sizga qanday yordam bera olaman?",
+    "Rahmat! Tez orada aloqaga chiqamiz.",
+    "Bugungi taklif: chegirma 20% faqat bugun!",
+  ];
+
   const imgRef = useRef<HTMLInputElement | null>(null);
   const audioRef = useRef<HTMLInputElement | null>(null);
 
-  const handleSend = () => {
-    if (!text.trim() && !selectedFile) return;
-    if (selectedFile && selectedType) {
-      onSend({ file: { type: selectedType, file: selectedFile } });
-    }
-    if (text.trim()) {
-      onSend({ text: text.trim() });
-    }
+  const resetForm = () => {
     setText("");
     setSelectedFile(null);
     setSelectedType(null);
+    setWhen("");
     if (imgRef.current) imgRef.current.value = "";
     if (audioRef.current) audioRef.current.value = "";
+  };
+
+  const handleSend = () => {
+    const hasText = !!text.trim();
+    const hasFile = !!selectedFile && !!selectedType;
+    if (!hasText && !hasFile) return;
+
+    const ts = when ? new Date(when).getTime() : 0;
+    const delay = ts - Date.now();
+
+    const sendNow = () => {
+      if (hasFile && selectedFile && selectedType) {
+        onSend({ file: { type: selectedType, file: selectedFile } });
+      }
+      if (hasText) {
+        onSend({ text: text.trim() });
+      }
+    };
+
+    if (when && delay > 0) {
+      window.setTimeout(sendNow, delay);
+      resetForm();
+      return;
+    }
+
+    sendNow();
+    resetForm();
   };
 
   const onPickImage = () => {
@@ -79,6 +107,38 @@ export default function MessageComposer({
           className="hidden"
         />
 
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              title="Shablon"
+              aria-label="Shablon"
+              className="shrink-0"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start">
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground">Shablonni tanlang</div>
+              <Select onValueChange={(v) => setText(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Shablon..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <Button
           type="button"
           variant="secondary"
@@ -111,6 +171,42 @@ export default function MessageComposer({
           <Mic className="h-4 w-4" />
         </Button>
 
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              title="Vaqt belgilash"
+              aria-label="Vaqt belgilash"
+              className="shrink-0"
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end">
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground">Yuborish vaqtini tanlang</div>
+              <Input
+                type="datetime-local"
+                value={when}
+                onChange={(e) => setWhen(e.target.value)}
+              />
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setWhen("")}
+                  className="text-xs rounded px-2 py-1 border hover:bg-background"
+                >
+                  Tozalash
+                </button>
+                <span className="text-[11px] text-muted-foreground">
+                  {when ? new Date(when).toLocaleString() : "Darhol"}
+                </span>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <Button
           type="button"
           size="icon"
@@ -122,6 +218,20 @@ export default function MessageComposer({
           <Send className="h-4 w-4" />
         </Button>
       </div>
+
+      {when ? (
+        <div className="mt-2 text-[11px] inline-flex items-center gap-2 rounded border px-2 py-1">
+          Rejalashtirilgan: {new Date(when).toLocaleString()}
+          <button
+            onClick={() => setWhen("")}
+            className="rounded p-0.5 hover:bg-accent/40"
+            aria-label="Rejani o'chirish"
+            title="Rejani o'chirish"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : null}
 
       {selectedFile ? (
         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
