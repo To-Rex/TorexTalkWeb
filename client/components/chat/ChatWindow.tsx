@@ -120,14 +120,25 @@ export default function ChatWindow({
                   📎 {m.file.name ?? "Hujjat"}
                 </a>
               ) : (
-                <a
-                  href={m.file.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
-                >
-                  📍 {m.file.name ?? "Lokatsiya"}
-                </a>
+                <div className="mt-1 rounded-md bg-background/60 border p-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-lg">📍</span>
+                    <div className="flex-1">
+                      <div className="font-medium">Lokatsiya</div>
+                      {m.file.name ? (
+                        <div className="text-xs text-muted-foreground">{m.file.name}</div>
+                      ) : null}
+                    </div>
+                    <a
+                      href={m.file.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs rounded px-2 py-1 border hover:bg-background"
+                    >
+                      Ko'rish
+                    </a>
+                  </div>
+                </div>
               )
             ) : null}
             <div className="text-[10px] text-muted-foreground mt-1">
