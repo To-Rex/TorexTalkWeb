@@ -41,10 +41,10 @@ export default function MessageComposer({
   const audioRef = useRef<HTMLInputElement | null>(null);
   const docRef = useRef<HTMLInputElement | null>(null);
 
-  const scheduleOpenRef = useRef(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const longPressTimer = useRef<number | null>(null);
   const longPressed = useRef(false);
+  const allowScheduleOpen = useRef(false);
 
   const resetForm = () => {
     setText("");
@@ -130,10 +130,11 @@ export default function MessageComposer({
   const handlePointerDown: React.PointerEventHandler<HTMLButtonElement> = (e) => {
     e.preventDefault();
     longPressed.current = false;
+    allowScheduleOpen.current = false;
     if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
     longPressTimer.current = window.setTimeout(() => {
       longPressed.current = true;
-      scheduleOpenRef.current = true;
+      allowScheduleOpen.current = true;
       setScheduleOpen(true);
     }, 550);
   };
@@ -193,7 +194,14 @@ export default function MessageComposer({
         </Button>
 
         {/* Long-press to schedule send */}
-        <Popover open={scheduleOpen} onOpenChange={(o) => { setScheduleOpen(o); scheduleOpenRef.current = o; }}>
+        <Popover open={scheduleOpen} onOpenChange={(o) => {
+          if (!o) {
+            setScheduleOpen(false);
+            allowScheduleOpen.current = false;
+          } else if (allowScheduleOpen.current) {
+            setScheduleOpen(true);
+          }
+        }}>
           <PopoverTrigger asChild>
             <Button
               type="button"
@@ -206,6 +214,7 @@ export default function MessageComposer({
               onPointerLeave={() => {
                 if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
                 longPressed.current = false;
+                allowScheduleOpen.current = false;
               }}
             >
               <Send className="h-4 w-4" />
