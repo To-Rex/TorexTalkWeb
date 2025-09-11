@@ -28,24 +28,21 @@ export default function AppDashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [chats, setChats] = useState<ChatItem[]>([
-    {
-      id: "1",
-      name: "Ali",
-      type: "private",
-      unread: 1,
-      avatar: "/placeholder.svg",
-    },
+    { id: "1", name: "Ali", type: "private", unread: 1, avatar: "/placeholder.svg" },
     { id: "2", name: "Nodira", type: "private", avatar: "/placeholder.svg" },
     { id: "3", name: "Jamshid", type: "private", avatar: "/placeholder.svg" },
     { id: "4", name: "Support", type: "private", avatar: "/placeholder.svg" },
-    {
-      id: "5",
-      name: "Marketing",
-      type: "group",
-      unread: 12,
-      avatar: "/placeholder.svg",
-    },
+    { id: "7", name: "Dilshod", type: "private", avatar: "/placeholder.svg" },
+    { id: "8", name: "Madina", type: "private", avatar: "/placeholder.svg" },
+    { id: "9", name: "Bekzod", type: "private", avatar: "/placeholder.svg" },
+    { id: "10", name: "Javlon", type: "private", avatar: "/placeholder.svg" },
+    { id: "11", name: "Sardor", type: "private", avatar: "/placeholder.svg" },
+    { id: "12", name: "Nigora", type: "private", avatar: "/placeholder.svg" },
+    { id: "5", name: "Marketing", type: "group", unread: 12, avatar: "/placeholder.svg" },
     { id: "6", name: "Savdo", type: "group", avatar: "/placeholder.svg" },
+    { id: "13", name: "Frontend Devs", type: "group", avatar: "/placeholder.svg" },
+    { id: "14", name: "Support Team", type: "group", avatar: "/placeholder.svg" },
+    { id: "15", name: "Family", type: "group", avatar: "/placeholder.svg" },
   ]);
 
   // messages keyed by chat id
