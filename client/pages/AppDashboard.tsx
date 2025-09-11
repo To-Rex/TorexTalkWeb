@@ -85,24 +85,37 @@ export default function AppDashboard() {
 
   const send = (payload: {
     text?: string;
-    file?: { type: "image" | "audio"; file: File };
+    attachment?:
+      | { type: "image" | "audio" | "document"; file: File }
+      | { type: "location"; url: string; name?: string };
   }) => {
     if (!currentId) return;
     setMessages((prev) => ({
       ...prev,
       [currentId]: [
         ...(prev[currentId] ?? []),
-        payload.file
-          ? {
-              id: Math.random().toString(36).slice(2),
-              sender: "me",
-              at: Date.now(),
-              file: {
-                type: payload.file.type,
-                url: URL.createObjectURL(payload.file.file),
-                name: payload.file.file.name,
-              },
-            }
+        payload.attachment
+          ? "file" in payload.attachment
+            ? {
+                id: Math.random().toString(36).slice(2),
+                sender: "me",
+                at: Date.now(),
+                file: {
+                  type: payload.attachment.type,
+                  url: URL.createObjectURL(payload.attachment.file),
+                  name: payload.attachment.file.name,
+                },
+              }
+            : {
+                id: Math.random().toString(36).slice(2),
+                sender: "me",
+                at: Date.now(),
+                file: {
+                  type: "location",
+                  url: payload.attachment.url,
+                  name: payload.attachment.name,
+                },
+              }
           : {
               id: Math.random().toString(36).slice(2),
               sender: "me",
