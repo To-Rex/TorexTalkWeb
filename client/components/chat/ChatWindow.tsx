@@ -3,7 +3,7 @@ import { useAuth } from "@/auth";
 import { ArrowLeft } from "lucide-react";
 
 export interface FileAttachment {
-  type: "image" | "audio";
+  type: "image" | "audio" | "document" | "location";
   url: string;
   name?: string;
 }
@@ -109,8 +109,25 @@ export default function ChatWindow({
                   alt={m.file.name ?? "image"}
                   className="max-w-full rounded-md mt-1"
                 />
-              ) : (
+              ) : m.file.type === "audio" ? (
                 <audio controls src={m.file.url} className="mt-1 w-full" />
+              ) : m.file.type === "document" ? (
+                <a
+                  href={m.file.url}
+                  download={m.file.name}
+                  className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
+                >
+                  📎 {m.file.name ?? "Hujjat"}
+                </a>
+              ) : (
+                <a
+                  href={m.file.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
+                >
+                  📍 {m.file.name ?? "Lokatsiya"}
+                </a>
               )
             ) : null}
             <div className="text-[10px] text-muted-foreground mt-1">
