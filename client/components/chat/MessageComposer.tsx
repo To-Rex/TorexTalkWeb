@@ -58,7 +58,7 @@ export default function MessageComposer({
 
   const handleSend = () => {
     const hasText = !!text.trim();
-    const hasFile = !!selectedFile && !!selectedType && selectedType !== "location";
+    const hasFile = !!selectedFile && !!selectedType;
     if (!hasText && !hasFile) return;
 
     const ts = when ? new Date(when).getTime() : 0;
