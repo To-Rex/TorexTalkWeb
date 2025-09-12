@@ -3,7 +3,7 @@ import { useAuth } from "@/auth";
 import { ArrowLeft } from "lucide-react";
 
 export interface FileAttachment {
-  type: "image" | "audio";
+  type: "image" | "audio" | "document" | "location";
   url: string;
   name?: string;
 }
@@ -58,7 +58,7 @@ export default function ChatWindow({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between border-b px-4 py-2">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-2 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="font-medium flex items-center gap-3">
           {onBack ? (
             <button
@@ -109,8 +109,36 @@ export default function ChatWindow({
                   alt={m.file.name ?? "image"}
                   className="max-w-full rounded-md mt-1"
                 />
-              ) : (
+              ) : m.file.type === "audio" ? (
                 <audio controls src={m.file.url} className="mt-1 w-full" />
+              ) : m.file.type === "document" ? (
+                <a
+                  href={m.file.url}
+                  download={m.file.name}
+                  className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
+                >
+                  📎 {m.file.name ?? "Hujjat"}
+                </a>
+              ) : (
+                <div className="mt-1 rounded-md bg-background/60 border p-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-lg">📍</span>
+                    <div className="flex-1">
+                      <div className="font-medium">Lokatsiya</div>
+                      {m.file.name ? (
+                        <div className="text-xs text-muted-foreground">{m.file.name}</div>
+                      ) : null}
+                    </div>
+                    <a
+                      href={m.file.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs rounded px-2 py-1 border hover:bg-background"
+                    >
+                      Ko'rish
+                    </a>
+                  </div>
+                </div>
               )
             ) : null}
             <div className="text-[10px] text-muted-foreground mt-1">
