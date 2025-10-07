@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 
-// Minimal local copy of the user shape stored in localStorage (tt_users)
+// Local storage user shape
 type TAccount = { id: string; name: string; phone?: string };
 type TUser = {
   email: string;
@@ -69,139 +69,181 @@ export default function AdminPanel() {
   }, [users, acctQuery]);
 
   return (
-    <div className="container py-6 space-y-6">
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setTab("dashboard")}
-          className={`px-3 py-1.5 rounded border text-sm ${tab === "dashboard" ? "bg-background" : "hover:bg-background/60"}`}
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => setTab("users")}
-          className={`px-3 py-1.5 rounded border text-sm ${tab === "users" ? "bg-background" : "hover:bg-background/60"}`}
-        >
-          Users
-        </button>
-        <button
-          onClick={() => setTab("accounts")}
-          className={`px-3 py-1.5 rounded border text-sm ${tab === "accounts" ? "bg-background" : "hover:bg-background/60"}`}
-        >
-          Accounts
-        </button>
+    <div className="container py-6">
+      <div className="grid gap-4 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr]">
+        {/* Sidebar (desktop) */}
+        <aside className="hidden md:block">
+          <div className="rounded-xl border bg-card p-3 md:sticky md:top-4">
+            <div className="text-sm font-semibold mb-2">Admin panel</div>
+            <nav className="grid gap-1">
+              <button
+                onClick={() => setTab("dashboard")}
+                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${tab === "dashboard" ? "bg-background border" : "hover:bg-background/60"}`}
+              >
+                <span>Dashboard</span>
+              </button>
+              <button
+                onClick={() => setTab("users")}
+                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${tab === "users" ? "bg-background border" : "hover:bg-background/60"}`}
+              >
+                <span>Users</span>
+              </button>
+              <button
+                onClick={() => setTab("accounts")}
+                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${tab === "accounts" ? "bg-background border" : "hover:bg-background/60"}`}
+              >
+                <span>Accounts</span>
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        {/* Content */}
+        <section className="space-y-6 min-w-0">
+          {/* Top segmented control (mobile) */}
+          <div className="md:hidden rounded-lg border p-1 bg-muted">
+            <div className="grid grid-cols-3 gap-1">
+              <button
+                onClick={() => setTab("dashboard")}
+                className={`px-3 py-1.5 rounded text-sm ${tab === "dashboard" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => setTab("users")}
+                className={`px-3 py-1.5 rounded text-sm ${tab === "users" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              >
+                Users
+              </button>
+              <button
+                onClick={() => setTab("accounts")}
+                className={`px-3 py-1.5 rounded text-sm ${tab === "accounts" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              >
+                Accounts
+              </button>
+            </div>
+          </div>
+
+          {tab === "dashboard" ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="rounded-xl border p-4 bg-card">
+                  <div className="text-sm text-muted-foreground">Messages sent</div>
+                  <div className="text-2xl font-bold">1,140</div>
+                </div>
+                <div className="rounded-xl border p-4 bg-card">
+                  <div className="text-sm text-muted-foreground">Auto replies</div>
+                  <div className="text-2xl font-bold">445</div>
+                </div>
+                <div className="rounded-xl border p-4 bg-card">
+                  <div className="text-sm text-muted-foreground">Active users</div>
+                  <div className="text-2xl font-bold">{users.length || 0}</div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border p-4 bg-card">
+                <div className="mb-3 font-semibold">System-wide analytics</div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={dashData} margin={{ left: -20 }}>
+                      <defs>
+                        <linearGradient id="c1" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.6}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
+                      <YAxis stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                      <Area type="monotone" dataKey="sent" stroke="hsl(var(--primary))" fill="url(#c1)" />
+                      <Area type="monotone" dataKey="auto" stroke="hsl(var(--accent))" fillOpacity={0.1} fill="hsl(var(--accent))" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "users" ? (
+            <div className="space-y-4">
+              <div className="rounded-xl border bg-card">
+                <div className="p-4 border-b flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <div className="font-semibold flex-1">Users</div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <input
+                      placeholder="Search users by email"
+                      value={userQuery}
+                      onChange={(e) => setUserQuery(e.target.value)}
+                      className="w-full sm:w-72 rounded-md bg-secondary px-3 py-2"
+                    />
+                    <div className="hidden sm:flex items-center text-xs text-muted-foreground px-2">Found: {filteredUsers.length}</div>
+                  </div>
+                </div>
+                <div className="p-2 overflow-auto">
+                  <table className="w-full text-sm min-w-[560px]">
+                    <thead className="text-left text-muted-foreground">
+                      <tr>
+                        <th className="p-2">Email</th>
+                        <th className="p-2">Role</th>
+                        <th className="p-2">Accounts</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map((u) => (
+                        <tr key={u.email} className="border-t">
+                          <td className="p-2">{u.email}</td>
+                          <td className="p-2">{u.isAdmin ? "Admin" : "Member"}</td>
+                          <td className="p-2">{u.accounts?.length ?? 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "accounts" ? (
+            <div className="space-y-4">
+              <div className="rounded-xl border bg-card">
+                <div className="p-4 border-b flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <div className="font-semibold flex-1">Accounts</div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <input
+                      placeholder="Search by user, account or phone"
+                      value={acctQuery}
+                      onChange={(e) => setAcctQuery(e.target.value)}
+                      className="w-full sm:w-96 rounded-md bg-secondary px-3 py-2"
+                    />
+                    <div className="hidden sm:flex items-center text-xs text-muted-foreground px-2">Found: {accountsFlat.length}</div>
+                  </div>
+                </div>
+                <div className="p-2 overflow-auto">
+                  <table className="w-full text-sm min-w-[640px]">
+                    <thead className="text-left text-muted-foreground">
+                      <tr>
+                        <th className="p-2">User</th>
+                        <th className="p-2">Account</th>
+                        <th className="p-2">Phone</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {accountsFlat.map((row) => (
+                        <tr key={`${row.owner}:${row.account.id}`} className="border-t">
+                          <td className="p-2">{row.owner}</td>
+                          <td className="p-2">{row.account.name}</td>
+                          <td className="p-2">{row.account.phone ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </div>
-
-      {tab === "dashboard" ? (
-        <div className="space-y-6">
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="rounded-xl border p-4 bg-card">
-              <div className="text-sm text-muted-foreground">Messages sent</div>
-              <div className="text-2xl font-bold">1,140</div>
-            </div>
-            <div className="rounded-xl border p-4 bg-card">
-              <div className="text-sm text-muted-foreground">Auto replies</div>
-              <div className="text-2xl font-bold">445</div>
-            </div>
-            <div className="rounded-xl border p-4 bg-card">
-              <div className="text-sm text-muted-foreground">Active users</div>
-              <div className="text-2xl font-bold">{users.length || 0}</div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border p-4 bg-card">
-            <div className="mb-3 font-semibold">System-wide analytics</div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dashData} margin={{ left: -20 }}>
-                  <defs>
-                    <linearGradient id="c1" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.6}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                  <Area type="monotone" dataKey="sent" stroke="hsl(var(--primary))" fill="url(#c1)" />
-                  <Area type="monotone" dataKey="auto" stroke="hsl(var(--accent))" fillOpacity={0.1} fill="hsl(var(--accent))" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {tab === "users" ? (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <input
-              placeholder="Search users by email"
-              value={userQuery}
-              onChange={(e) => setUserQuery(e.target.value)}
-              className="w-full sm:w-72 rounded-md bg-secondary px-3 py-2"
-            />
-            <div className="text-xs text-muted-foreground">Found: {filteredUsers.length}</div>
-          </div>
-
-          <div className="rounded-xl border p-2 bg-card overflow-auto">
-            <table className="w-full text-sm min-w-[560px]">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="p-2">Email</th>
-                  <th className="p-2">Role</th>
-                  <th className="p-2">Accounts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((u) => (
-                  <tr key={u.email} className="border-t">
-                    <td className="p-2">{u.email}</td>
-                    <td className="p-2">{u.isAdmin ? "Admin" : "Member"}</td>
-                    <td className="p-2">{u.accounts?.length ?? 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : null}
-
-      {tab === "accounts" ? (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <input
-              placeholder="Search by user, account or phone"
-              value={acctQuery}
-              onChange={(e) => setAcctQuery(e.target.value)}
-              className="w-full sm:w-96 rounded-md bg-secondary px-3 py-2"
-            />
-            <div className="text-xs text-muted-foreground">Found: {accountsFlat.length}</div>
-          </div>
-
-          <div className="rounded-xl border p-2 bg-card overflow-auto">
-            <table className="w-full text-sm min-w-[640px]">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="p-2">User</th>
-                  <th className="p-2">Account</th>
-                  <th className="p-2">Phone</th>
-                </tr>
-              </thead>
-              <tbody>
-                {accountsFlat.map((row) => (
-                  <tr key={`${row.owner}:${row.account.id}`} className="border-t">
-                    <td className="p-2">{row.owner}</td>
-                    <td className="p-2">{row.account.name}</td>
-                    <td className="p-2">{row.account.phone ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
