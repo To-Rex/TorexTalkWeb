@@ -34,7 +34,7 @@ function saveUsers(users: TUser[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-type AdminLog = { id: string; at: number; action: string; detail?: string };
+type AdminLog = { id: string; at: number; action: string; detail?: string; user?: string };
 function readLogs(): AdminLog[] {
   try {
     const raw = localStorage.getItem(LOGS_KEY);
@@ -82,6 +82,8 @@ export default function AdminPanel() {
   const [acctQuery, setAcctQuery] = useState("");
   const [settings, setSettings] = useState<AdminSettings>(readSettings());
   const [newAcct, setNewAcct] = useState<{ owner: string; name: string; phone: string }>({ owner: "", name: "", phone: "" });
+  const [logsUser, setLogsUser] = useState<string>("");
+  const [logsQuery, setLogsQuery] = useState<string>("");
 
   useEffect(() => {
     setUsers(getUsers());
@@ -132,19 +134,19 @@ export default function AdminPanel() {
 
   const toggleAdmin = (email: string) => {
     updateUsers((prev) => prev.map((u) => (u.email === email ? { ...u, isAdmin: !u.isAdmin } : u)));
-    appendLog({ action: "toggle_admin", detail: email });
+    appendLog({ action: "toggle_admin", detail: email, user: email });
   };
   const toggleBlocked = (email: string) => {
     updateUsers((prev) => prev.map((u) => (u.email === email ? { ...u, blocked: !u.blocked } : u)));
-    appendLog({ action: "toggle_blocked", detail: email });
+    appendLog({ action: "toggle_blocked", detail: email, user: email });
   };
   const removeUser = (email: string) => {
     updateUsers((prev) => prev.filter((u) => u.email !== email));
-    appendLog({ action: "remove_user", detail: email });
+    appendLog({ action: "remove_user", detail: email, user: email });
   };
   const changePlan = (email: string, plan: string) => {
     updateUsers((prev) => prev.map((u) => (u.email === email ? { ...u, settings: { ...(u.settings ?? {}), plan } } : u)));
-    appendLog({ action: "change_plan", detail: `${email} -> ${plan}` });
+    appendLog({ action: "change_plan", detail: `${email} -> ${plan}`, user: email });
   };
 
   const addAccount = () => {
@@ -162,7 +164,7 @@ export default function AdminPanel() {
           : u,
       ),
     );
-    appendLog({ action: "add_account", detail: `${owner} <- ${name}` });
+    appendLog({ action: "add_account", detail: `${owner} <- ${name}`, user: owner });
     setNewAcct({ owner: "", name: "", phone: "" });
   };
   const removeAccount = (owner: string, accountId: string) => {
@@ -171,7 +173,7 @@ export default function AdminPanel() {
         u.email === owner ? { ...u, accounts: (u.accounts ?? []).filter((a) => a.id !== accountId) } : u,
       ),
     );
-    appendLog({ action: "remove_account", detail: `${owner} - ${accountId}` });
+    appendLog({ action: "remove_account", detail: `${owner} - ${accountId}`, user: owner });
   };
 
   // Settings persist
@@ -182,6 +184,33 @@ export default function AdminPanel() {
       appendLog({ action: "update_settings", detail: JSON.stringify(next) });
       return merged;
     });
+  };
+
+  const exportUsersJson = () => {
+    const data = JSON.stringify(users, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const aEl = document.createElement("a");
+    aEl.href = url;
+    aEl.download = "torex_users_export.json";
+    aEl.click();
+    URL.revokeObjectURL(url);
+  };
+  const importUsersJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        if (Array.isArray(parsed)) {
+          saveUsers(parsed as TUser[]);
+          setUsers(parsed as TUser[]);
+          appendLog({ action: "import_users" });
+        }
+      } catch {}
+    };
+    reader.readAsText(f);
   };
 
   // UI
@@ -287,11 +316,16 @@ export default function AdminPanel() {
                       onChange={(e) => setUserQuery(e.target.value)}
                       className="w-full sm:w-72 rounded-md bg-secondary px-3 py-2"
                     />
+                    <button className="px-3 py-2 rounded border hover:bg-background" onClick={exportUsersJson}>Export</button>
+                    <label className="px-3 py-2 rounded border hover:bg-background cursor-pointer">
+                      Import
+                      <input type="file" accept="application/json" onChange={importUsersJson} className="hidden" />
+                    </label>
                     <div className="hidden sm:flex items-center text-xs text-muted-foreground px-2">Found: {filteredUsers.length}</div>
                   </div>
                 </div>
                 <div className="p-2 overflow-auto">
-                  <table className="w-full text-sm min-w-[720px]">
+                  <table className="w-full text-sm min-w-[860px]">
                     <thead className="text-left text-muted-foreground">
                       <tr>
                         <th className="p-2">Email</th>
@@ -487,29 +521,60 @@ export default function AdminPanel() {
           {tab === "logs" ? (
             <div className="space-y-4">
               <div className="rounded-xl border bg-card">
-                <div className="p-4 border-b flex items-center gap-2">
+                <div className="p-4 border-b flex flex-col sm:flex-row gap-2 sm:items-center">
                   <div className="font-semibold flex-1">Logs</div>
-                  <button className="px-2 py-1 rounded border hover:bg-background" onClick={() => writeLogs([])}>Clear</button>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <select className="rounded-md bg-secondary px-3 py-2" value={logsUser} onChange={(e) => setLogsUser(e.target.value)}>
+                      <option value="">All users</option>
+                      {users.map((u) => (
+                        <option key={u.email} value={u.email}>{u.email}</option>
+                      ))}
+                    </select>
+                    <input
+                      placeholder="Filter by action/detail"
+                      value={logsQuery}
+                      onChange={(e) => setLogsQuery(e.target.value)}
+                      className="w-full sm:w-64 rounded-md bg-secondary px-3 py-2"
+                    />
+                    <button className="px-3 py-2 rounded border hover:bg-background" onClick={() => writeLogs([])}>Clear</button>
+                  </div>
                 </div>
                 <div className="p-2 overflow-auto">
-                  <table className="w-full text-sm min-w-[560px]">
-                    <thead className="text-left text-muted-foreground">
-                      <tr>
-                        <th className="p-2">Time</th>
-                        <th className="p-2">Action</th>
-                        <th className="p-2">Detail</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {readLogs().map((l) => (
-                        <tr key={l.id} className="border-t">
-                          <td className="p-2 whitespace-nowrap">{new Date(l.at).toLocaleString()}</td>
-                          <td className="p-2">{l.action}</td>
-                          <td className="p-2 break-words">{l.detail ?? ""}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {(() => {
+                    const all = readLogs();
+                    const fq = logsQuery.trim().toLowerCase();
+                    const filtered = all.filter((l) => {
+                      const okUser = logsUser
+                        ? (l.user ? l.user === logsUser : (l.detail ?? "").includes(logsUser))
+                        : true;
+                      const okQ = fq
+                        ? (l.action.toLowerCase().includes(fq) || (l.detail ?? "").toLowerCase().includes(fq))
+                        : true;
+                      return okUser && okQ;
+                    });
+                    return (
+                      <table className="w-full text-sm min-w-[640px]">
+                        <thead className="text-left text-muted-foreground">
+                          <tr>
+                            <th className="p-2">User</th>
+                            <th className="p-2">Time</th>
+                            <th className="p-2">Action</th>
+                            <th className="p-2">Detail</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filtered.map((l) => (
+                            <tr key={l.id} className="border-t">
+                              <td className="p-2 whitespace-nowrap">{l.user ?? "—"}</td>
+                              <td className="p-2 whitespace-nowrap">{new Date(l.at).toLocaleString()}</td>
+                              <td className="p-2">{l.action}</td>
+                              <td className="p-2 break-words">{l.detail ?? ""}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
