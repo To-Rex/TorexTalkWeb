@@ -437,7 +437,9 @@ export default function AdminPanel() {
                             value={String((u.settings as any)?.plan ?? "Free")}
                             onChange={(e) => changePlan(u.email, e.target.value)}
                           >
-                            {(["Free", "Plus", "Premium"]) as const}.map
+                            {["Free", "Plus", "Premium"].map((p) => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
                           </select>
                         </td>
                       </tr>
