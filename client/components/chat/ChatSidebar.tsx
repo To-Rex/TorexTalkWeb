@@ -47,8 +47,8 @@ export default function ChatSidebar({
     : [];
 
   return (
-    <aside className="w-full md:w-64 lg:w-72 border-r bg-secondary/30 flex flex-col h-full">
-      <div className="p-3 flex gap-2">
+    <aside className="w-full md:w-64 lg:w-72 border-r bg-secondary/30 flex flex-col h-full min-h-0">
+      <div className="p-3 flex gap-2 shrink-0">
         <button
           onClick={() => setTab("private")}
           className={`flex-1 px-3 py-2 rounded-md text-sm ${tab === "private" ? "bg-background" : "hover:bg-background/50"}`}
@@ -63,7 +63,7 @@ export default function ChatSidebar({
         </button>
       </div>
 
-      <div className="px-3 pb-2">
+      <div className="px-3 pb-2 shrink-0">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -84,7 +84,7 @@ export default function ChatSidebar({
         </div>
       </div>
 
-      <div className="p-2 space-y-1 flex-1 overflow-auto min-h-0">
+      <div className="p-2 space-y-1 flex-1 min-h-0 overflow-y-auto">
         {filtered.map((c) => (
           <button
             key={c.id}
