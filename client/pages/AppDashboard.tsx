@@ -215,14 +215,14 @@ export default function AppDashboard() {
         </div>
       </div>
       {!isMobile ? (
-        <div className="grid gap-3 rounded-xl border overflow-hidden min-h-[70vh] grid-cols-1 md:grid-cols-[1fr_2fr] lg:grid-cols-[1fr_3fr]">
+        <div className="grid gap-3 rounded-xl border overflow-hidden h-[70vh] grid-cols-1 md:grid-cols-[1fr_2fr] lg:grid-cols-[1fr_3fr]">
           <ChatSidebar
             chats={chats}
             currentId={currentId}
             onSelect={setCurrentId}
             onCreateChat={onCreateChat}
           />
-          <div className="flex flex-col min-h-[50vh]">
+          <div className="flex flex-col h-full min-h-0">
             <div className="flex-1 min-h-0">
               <ChatWindow
                 title={currentName}
@@ -234,7 +234,7 @@ export default function AppDashboard() {
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border overflow-hidden min-h-[70vh] flex flex-col">
+        <div className="rounded-xl border overflow-hidden h-[70vh] flex flex-col">
           {!currentId ? (
             <div className="flex-1 min-h-0">
               <ChatSidebar
@@ -245,7 +245,7 @@ export default function AppDashboard() {
               />
             </div>
           ) : (
-            <div className="flex flex-col min-h-[70vh]">
+            <div className="flex flex-col h-[70vh] min-h-0">
               <div className="flex-1 min-h-0">
                 <ChatWindow
                   title={currentName}

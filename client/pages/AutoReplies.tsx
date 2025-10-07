@@ -137,7 +137,7 @@ export default function AutoReplies() {
     return editing ? (
       <div className="flex gap-2">
         <input
-          className="rounded-md bg-secondary px-2 py-1"
+          className="w-full sm:w-auto flex-1 rounded-md bg-secondary px-2 py-1"
           value={val}
           onChange={(e) => setVal(e.target.value)}
         />
@@ -188,9 +188,9 @@ export default function AutoReplies() {
     return (
       <div className="space-y-2">
         {item.answers.map((ans, idx) => (
-          <div key={idx} className="flex items-center justify-between gap-2">
-            <EditableText value={ans} onSave={(val) => onEdit(idx, val)} />
-            <div className="flex items-center gap-2">
+          <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div className="flex-1 min-w-0"><EditableText value={ans} onSave={(val) => onEdit(idx, val)} /></div>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
               <button
                 onClick={() => onRemove(idx)}
                 className="px-2 py-1 rounded bg-destructive text-destructive-foreground text-sm"
@@ -200,19 +200,19 @@ export default function AutoReplies() {
             </div>
           </div>
         ))}
-        <div className="flex gap-2 mt-2">
+        <div className="flex flex-col sm:flex-row gap-2 mt-2">
           <input
             placeholder="Yangi javob"
             value={local}
             onChange={(e) => setLocal(e.target.value)}
-            className="flex-1 rounded-md bg-secondary px-3 py-2"
+            className="w-full flex-1 rounded-md bg-secondary px-3 py-2"
           />
           <button
             onClick={() => {
               onAdd(local);
               setLocal("");
             }}
-            className="px-3 py-2 rounded bg-primary text-primary-foreground"
+            className="w-full sm:w-auto px-3 py-2 rounded bg-primary text-primary-foreground"
           >
             Javob qo'shish
           </button>
@@ -261,7 +261,7 @@ export default function AutoReplies() {
             ))}
           </div>
         </div>
-        <div className="rounded-xl border p-4 bg-card">
+        <div className="rounded-xl border p-4 bg-card md:sticky md:top-4">
           <h3 className="font-semibold mb-2">Yangi Q&A</h3>
           <input
             className="w-full rounded-md bg-secondary px-3 py-2 mb-2"
@@ -275,8 +275,9 @@ export default function AutoReplies() {
             value={initialAnswersText}
             onChange={(e) => setInitialAnswersText(e.target.value)}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2">
             <Button
+              className="w-full sm:w-auto"
               onClick={() => {
                 const answers = initialAnswersText
                   .split("\n")
@@ -298,10 +299,10 @@ export default function AutoReplies() {
             >
               Qo'shish
             </Button>
-            <Button variant="outline" onClick={exportJson}>
+            <Button className="w-full sm:w-auto" variant="outline" onClick={exportJson}>
               Export
             </Button>
-            <label className="px-3 py-2 rounded bg-secondary cursor-pointer">
+            <label className="px-3 py-2 rounded bg-secondary cursor-pointer w-full sm:w-auto text-center">
               Import
               <input
                 type="file"

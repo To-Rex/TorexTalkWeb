@@ -22,6 +22,10 @@ export default function MainLayout({
   );
   const showSidebar = Boolean(user) && !isHidden;
 
+  // Hide footer for authenticated users on app-related pages
+  const noFooterPaths = ["/app", "/auto-replies", "/settings"];
+  const hideFooter = Boolean(user) && noFooterPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
   return (
     <div className="min-h-screen flex flex-col">
       <AppHeader
@@ -38,7 +42,7 @@ export default function MainLayout({
           {children}
         </main>
       </div>
-      <Footer />
+      {hideFooter ? null : <Footer />}
 
       {showSidebar && mobileOpen ? (
         <div className="fixed inset-0 z-50 md:hidden">
