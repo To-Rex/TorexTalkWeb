@@ -3,6 +3,7 @@ import { useI18n } from "@/i18n";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { Check, Sparkles, X } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Accordion,
   AccordionContent,
@@ -30,11 +31,110 @@ function AnimatedPrice({ price, period }: { price: { monthly: number; yearly: nu
   );
 }
 
+type Plan = {
+  id: string;
+  name: string;
+  benefit: string;
+  price: { monthly: number; yearly: number };
+  features: string[];
+  cta: string;
+};
+
+function PlanCard({ plan, period, highlight, onSelect }: { plan: Plan; period: "monthly" | "yearly"; highlight?: boolean; onSelect: () => void }) {
+  const [spot, setSpot] = useState({ x: 50, y: 50 });
+  return (
+    <motion.div
+      variants={{ hidden: { y: 16, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+      whileHover={{ y: -4, scale: 1.01 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      onMouseMove={(e) => {
+        const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+        const x = ((e.clientX - r.left) / r.width) * 100;
+        const y = ((e.clientY - r.top) / r.height) * 100;
+        setSpot({ x, y });
+      }}
+      className={`relative rounded-2xl border bg-card p-6 flex flex-col overflow-hidden ${highlight ? "ring-2 ring-primary/60" : ""}`}
+    >
+      {highlight ? (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-1 text-[10px] font-semibold text-primary"
+        >
+          <Sparkles className="h-3 w-3" /> popular
+        </motion.div>
+      ) : null}
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className="text-sm text-muted-foreground mb-1">{plan.name}</motion.div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={period + plan.id}
+          initial={{ opacity: 0, rotateX: 90 }}
+          animate={{ opacity: 1, rotateX: 0 }}
+          exit={{ opacity: 0, rotateX: -90 }}
+          style={{ transformPerspective: 800 }}
+          transition={{ duration: 0.35 }}
+        >
+          <AnimatedPrice price={plan.price} period={period} />
+        </motion.div>
+      </AnimatePresence>
+
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.05 }} className="text-sm text-muted-foreground mb-4">{plan.benefit}</motion.p>
+
+      <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }} className="space-y-2 mb-6">
+        {plan.features.map((f) => (
+          <motion.div key={f} variants={{ hidden: { opacity: 0, x: -6 }, show: { opacity: 1, x: 0 } }} className="flex items-center gap-2 text-sm">
+            <Check className="h-4 w-4 text-primary" />
+            <span>{f}</span>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-auto">
+        <Button className="w-full" onClick={onSelect}>{plan.cta}</Button>
+      </motion.div>
+
+      <motion.div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <motion.div
+          className="absolute -inset-6 rounded-3xl bg-primary/10 blur-2xl"
+          initial={{ opacity: 0 }}
+          whileHover={{ opacity: 1 }}
+        />
+        <div
+          className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style={{
+            background: `radial-gradient(600px circle at ${spot.x}% ${spot.y}%, hsl(var(--primary)/0.10), transparent 40%)`,
+          }}
+        />
+        <motion.div
+          className="absolute -inset-px rounded-2xl"
+          style={{
+            background:
+              "conic-gradient(from 0deg, transparent, rgba(59,130,246,0.2), transparent 30%)",
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+        />
+        {highlight ? (
+          <motion.div
+            className="absolute inset-x-0 -top-1 h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+            animate={{ backgroundPositionX: ["0%", "200%"] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            style={{ backgroundSize: "200% 100%" }}
+          />
+        ) : null}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function Pricing() {
   const { t } = useI18n();
   const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
 
-  const plans = useMemo(
+  const plans: Plan[] = useMemo(
     () => [
       {
         id: "free",
@@ -95,6 +195,19 @@ export default function Pricing() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       />
+
+      {/* floating particles */}
+      <motion.div className="pointer-events-none absolute -z-10 inset-0">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="absolute h-24 w-24 rounded-full bg-primary/10"
+            style={{ top: `${10 + i * 25}%`, left: `${15 + i * 25}%` }}
+            animate={{ y: [0, -10, 0], x: [0, 10, 0] }}
+            transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut" }}
+          />
+        ))}
+      </motion.div>
 
       <div className="mb-8 sm:mb-10 text-center">
         <motion.h2
@@ -169,66 +282,16 @@ export default function Pricing() {
         whileInView="show"
         viewport={{ once: true, amount: 0.2 }}
         variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }}
-        className="grid md:grid-cols-3 gap-4 sm:gap-6"
+        className="grid md:grid-cols-3 gap-4 sm:gap-6 group"
       >
         {plans.map((p) => (
-          <motion.div
+          <PlanCard
             key={p.id}
-            variants={{ hidden: { y: 16, opacity: 0 }, show: { y: 0, opacity: 1 } }}
-            whileHover={{ y: -4, scale: 1.01 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className={`relative rounded-2xl border bg-card p-6 flex flex-col overflow-hidden ${
-              p.id === "plus" ? "ring-2 ring-primary/60" : ""
-            }`}
-          >
-            {p.id === "plus" ? (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-1 text-[10px] font-semibold text-primary"
-              >
-                <Sparkles className="h-3 w-3" /> {t("popular")}
-              </motion.div>
-            ) : null}
-
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className="text-sm text-muted-foreground mb-1">{p.name}</motion.div>
-            <AnimatePresence mode="wait">
-              <motion.div key={period + p.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.25 }}>
-                <AnimatedPrice price={p.price} period={period} />
-              </motion.div>
-            </AnimatePresence>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.05 }} className="text-sm text-muted-foreground mb-4">{p.benefit}</motion.p>
-
-            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }} className="space-y-2 mb-6">
-              {p.features.map((f) => (
-                <motion.div key={f} variants={{ hidden: { opacity: 0, x: -6 }, show: { opacity: 1, x: 0 } }} className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-primary" />
-                  <span>{f}</span>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-auto">
-              <Button className="w-full">{p.cta}</Button>
-            </motion.div>
-
-            <motion.div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-              <motion.div
-                className="absolute -inset-6 rounded-3xl bg-primary/10 blur-2xl"
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-              />
-              {p.id === "plus" ? (
-                <motion.div
-                  className="absolute inset-x-0 -top-1 h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-                  animate={{ backgroundPositionX: ["0%", "200%"] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  style={{ backgroundSize: "200% 100%" }}
-                />
-              ) : null}
-            </motion.div>
-          </motion.div>
+            plan={p}
+            period={period}
+            highlight={p.id === "plus"}
+            onSelect={() => toast(`${t("selected")}: ${p.name}`)}
+          />
         ))}
       </motion.div>
 
