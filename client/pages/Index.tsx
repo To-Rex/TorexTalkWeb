@@ -183,7 +183,7 @@ export default function Index() {
               <Button variant="outline">Ro'yxatdan o'tish</Button>
             </Link>
             <Link to="/login">
-              <Button>Sign in</Button>
+              <Button>{t("sign_in")}</Button>
             </Link>
           </div>
         </div>
