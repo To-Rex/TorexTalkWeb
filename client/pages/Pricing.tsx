@@ -40,19 +40,16 @@ type Plan = {
   cta: string;
 };
 
-function PlanCard({ plan, period, highlight, onSelect }: { plan: Plan; period: "monthly" | "yearly"; highlight?: boolean; onSelect: () => void }) {
-  const [spot, setSpot] = useState({ x: 50, y: 50 });
+function PlanCard({ plan, period, highlight, selected, onSelect }: { plan: Plan; period: "monthly" | "yearly"; highlight?: boolean; selected: boolean; onSelect: () => void }) {
+  const { t } = useI18n();
   return (
     <motion.div
+      layout
       variants={{ hidden: { y: 16, opacity: 0 }, show: { y: 0, opacity: 1 } }}
-      whileHover={{ y: -4, scale: 1.01 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      onMouseMove={(e) => {
-        const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-        const x = ((e.clientX - r.left) / r.width) * 100;
-        const y = ((e.clientY - r.top) / r.height) * 100;
-        setSpot({ x, y });
-      }}
+      whileHover={{ y: -4, scale: selected ? 1.05 : 1.03 }}
+      animate={{ scale: selected ? 1.04 : 1, boxShadow: selected ? "0 10px 30px rgba(59,130,246,0.25)" : "0 0 0 rgba(0,0,0,0)" }}
+      transition={{ type: "spring", stiffness: 260, damping: 22 }}
+      onClick={onSelect}
       className={`relative rounded-2xl border bg-card p-6 flex flex-col overflow-hidden ${highlight ? "ring-2 ring-primary/60" : ""}`}
     >
       {highlight ? (
@@ -62,7 +59,7 @@ function PlanCard({ plan, period, highlight, onSelect }: { plan: Plan; period: "
           transition={{ duration: 0.3 }}
           className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-1 text-[10px] font-semibold text-primary"
         >
-          <Sparkles className="h-3 w-3" /> popular
+          <Sparkles className="h-3 w-3" /> {t("popular")}
         </motion.div>
       ) : null}
 
@@ -93,39 +90,28 @@ function PlanCard({ plan, period, highlight, onSelect }: { plan: Plan; period: "
       </motion.div>
 
       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-auto">
-        <Button className="w-full" onClick={onSelect}>{plan.cta}</Button>
+        <Button className="w-full" onClick={(e) => { e.stopPropagation(); onSelect(); }}>{plan.cta}</Button>
       </motion.div>
 
-      <motion.div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+      {/* constant pulsing glow (non-cursor) */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        animate={{ opacity: selected ? [0.15, 0.3, 0.15] : 0.1 }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        style={{ background: "radial-gradient(800px circle at 50% 0%, hsl(var(--primary)/0.10), transparent 40%)" }}
+      />
+
+      {/* animated top shimmer for highlight */}
+      {highlight ? (
         <motion.div
-          className="absolute -inset-6 rounded-3xl bg-primary/10 blur-2xl"
-          initial={{ opacity: 0 }}
-          whileHover={{ opacity: 1 }}
+          aria-hidden
+          className="absolute inset-x-0 -top-1 h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+          animate={{ backgroundPositionX: ["0%", "200%"] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          style={{ backgroundSize: "200% 100%" }}
         />
-        <div
-          className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-          style={{
-            background: `radial-gradient(600px circle at ${spot.x}% ${spot.y}%, hsl(var(--primary)/0.10), transparent 40%)`,
-          }}
-        />
-        <motion.div
-          className="absolute -inset-px rounded-2xl"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent, rgba(59,130,246,0.2), transparent 30%)",
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
-        />
-        {highlight ? (
-          <motion.div
-            className="absolute inset-x-0 -top-1 h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-            animate={{ backgroundPositionX: ["0%", "200%"] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            style={{ backgroundSize: "200% 100%" }}
-          />
-        ) : null}
-      </motion.div>
+      ) : null}
     </motion.div>
   );
 }
@@ -133,6 +119,7 @@ function PlanCard({ plan, period, highlight, onSelect }: { plan: Plan; period: "
 export default function Pricing() {
   const { t } = useI18n();
   const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
+  const [selected, setSelected] = useState<string>("plus");
 
   const plans: Plan[] = useMemo(
     () => [
@@ -196,18 +183,14 @@ export default function Pricing() {
         transition={{ duration: 0.6 }}
       />
 
-      {/* floating particles */}
-      <motion.div className="pointer-events-none absolute -z-10 inset-0">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className="absolute h-24 w-24 rounded-full bg-primary/10"
-            style={{ top: `${10 + i * 25}%`, left: `${15 + i * 25}%` }}
-            animate={{ y: [0, -10, 0], x: [0, 10, 0] }}
-            transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut" }}
-          />
-        ))}
-      </motion.div>
+      {/* sweeping beam (non-cursor) */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-32 -z-10 h-24"
+        animate={{ backgroundPositionX: ["0%", "200%"] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        style={{ background: "linear-gradient(90deg, transparent, rgba(59,130,246,0.08), transparent)", backgroundSize: "200% 100%" }}
+      />
 
       <div className="mb-8 sm:mb-10 text-center">
         <motion.h2
@@ -282,7 +265,7 @@ export default function Pricing() {
         whileInView="show"
         viewport={{ once: true, amount: 0.2 }}
         variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }}
-        className="grid md:grid-cols-3 gap-4 sm:gap-6 group"
+        className="grid md:grid-cols-3 gap-4 sm:gap-6"
       >
         {plans.map((p) => (
           <PlanCard
@@ -290,7 +273,11 @@ export default function Pricing() {
             plan={p}
             period={period}
             highlight={p.id === "plus"}
-            onSelect={() => toast(`${t("selected")}: ${p.name}`)}
+            selected={selected === p.id}
+            onSelect={() => {
+              setSelected(p.id);
+              toast(`${t("selected")}: ${p.name}`);
+            }}
           />
         ))}
       </motion.div>
