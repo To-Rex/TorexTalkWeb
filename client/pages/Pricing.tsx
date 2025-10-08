@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   Accordion,
@@ -60,8 +60,29 @@ export default function Pricing() {
   const formatPrice = (p: { monthly: number; yearly: number }) =>
     period === "monthly" ? `$${p.monthly}/mo` : `$${p.yearly}/yr`;
 
+  const comparison = [
+    {
+      label: t("label_seats"),
+      free: "1",
+      plus: "3",
+      premium: "10",
+    },
+    {
+      label: t("label_msgs"),
+      free: "1 000",
+      plus: "50 000",
+      premium: "500 000",
+    },
+    { label: t("label_support"), free: t("support_none"), plus: t("support_business"), premium: t("support_247") },
+    { label: t("label_api"), free: false, plus: true, premium: true },
+    { label: t("label_integrations"), free: true, plus: true, premium: true },
+    { label: t("label_audit"), free: false, plus: false, premium: true },
+  ] as const;
+
   return (
-    <section className="container py-10 sm:py-14">
+    <section className="container py-10 sm:py-14 relative">
+      <div className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-40 bg-gradient-to-b from-primary/15 to-transparent blur-2xl" />
+
       <div className="mb-8 sm:mb-10 text-center">
         <motion.h2
           initial={{ opacity: 0, y: 10 }}
@@ -84,7 +105,7 @@ export default function Pricing() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
-          className="mx-auto mt-5 inline-flex items-center rounded-full border bg-card p-1 text-xs"
+          className="mx-auto mt-5 inline-flex items-center rounded-full border bg-card p-1 text-xs relative"
           role="tablist"
           aria-label="Billing period"
         >
@@ -136,10 +157,12 @@ export default function Pricing() {
         }}
         className="grid md:grid-cols-3 gap-4 sm:gap-6"
       >
-        {plans.map((p, idx) => (
+        {plans.map((p) => (
           <motion.div
             key={p.id}
             variants={{ hidden: { y: 16, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+            whileHover={{ y: -4, scale: 1.01 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
             className={`relative rounded-2xl border bg-card p-6 flex flex-col overflow-hidden ${
               p.id === "plus" ? "ring-2 ring-primary/60" : ""
             }`}
@@ -164,9 +187,81 @@ export default function Pricing() {
             </div>
 
             <Button className="mt-auto">{p.cta}</Button>
+
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 -z-10"
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+            >
+              <div className="absolute -inset-6 rounded-3xl bg-primary/10 blur-2xl" />
+            </motion.div>
           </motion.div>
         ))}
       </motion.div>
+
+      <div className="mt-12">
+        <h3 className="text-xl font-semibold mb-4">{t("all_plans_include")}</h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {["feature_1_t", "feature_2_t", "feature_3_t", "feature_4_t", "feature_5_t", "feature_6_t"].map(
+            (k) => (
+              <motion.div
+                key={k}
+                initial={{ opacity: 0, y: 6 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.25 }}
+                className="flex items-center gap-2 rounded-lg border bg-card p-3 text-sm"
+              >
+                <Check className="h-4 w-4 text-primary" /> {t(k)}
+              </motion.div>
+            ),
+          )}
+        </div>
+      </div>
+
+      <div className="mt-12">
+        <h3 className="text-xl font-semibold mb-4">{t("compare_title")}</h3>
+        <div className="overflow-hidden rounded-xl border">
+          <div className="grid grid-cols-4 bg-secondary px-3 py-2 text-xs font-semibold">
+            <div />
+            <div>{t("plan_free")}</div>
+            <div>{t("plan_plus")}</div>
+            <div>{t("plan_premium")}</div>
+          </div>
+          <div className="divide-y">
+            {comparison.map((row, i) => (
+              <div key={row.label} className="grid grid-cols-4 items-center px-3 py-3 text-sm">
+                <div className="text-muted-foreground">{row.label}</div>
+                {[row.free, row.plus, row.premium].map((v, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    {typeof v === "boolean" ? (
+                      v ? (
+                        <Check className="h-4 w-4 text-primary" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      )
+                    ) : (
+                      <span>{v}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-12 rounded-xl border bg-card p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <div className="text-lg font-semibold">{t("guarantee_title")}</div>
+          <div className="text-sm text-muted-foreground">{t("guarantee_desc")}</div>
+          <div className="mt-2 text-xs text-muted-foreground">
+            {t("payment_methods")}: {t("payment_list")}
+          </div>
+        </div>
+        <Button>{t("contact_cta")}</Button>
+      </div>
 
       <div className="mt-12">
         <h3 className="text-xl font-semibold mb-4">{t("faq_title")}</h3>
