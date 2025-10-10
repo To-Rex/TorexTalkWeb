@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/auth";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessagesSquare } from "lucide-react";
 
 export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" | "overlay" }) {
   const location = useLocation();
@@ -60,15 +60,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
               : "hover:bg-accent/40"
           }`}
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M3 12l7-7 11 11-7 7L3 12z"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <MessagesSquare className="h-5 w-5" />
           {showText ? <span>Chats</span> : null}
         </Link>
         <Link
