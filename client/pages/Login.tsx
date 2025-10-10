@@ -78,6 +78,24 @@ export default function Login() {
   return (
     <section className="relative">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.accent/10),transparent_60%)]" />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -top-10 -left-10 h-72 w-72 rounded-full bg-primary/20 blur-3xl"
+        animate={{ x: [0, 20, -10, 0], y: [0, -15, 10, 0], scale: [1, 1.05, 0.98, 1] }}
+        transition={{ duration: 14, ease: "easeInOut", repeat: Infinity }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute bottom-10 -right-6 h-80 w-80 rounded-full bg-accent/20 blur-3xl"
+        animate={{ x: [0, -15, 10, 0], y: [0, 10, -12, 0], scale: [1, 0.97, 1.04, 1] }}
+        transition={{ duration: 16, ease: "easeInOut", repeat: Infinity }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-secondary/30 blur-2xl"
+        animate={{ x: [0, 8, -6, 0], y: [0, -8, 6, 0], opacity: [0.6, 0.8, 0.7, 0.6] }}
+        transition={{ duration: 18, ease: "easeInOut", repeat: Infinity }}
+      />
       <div className="container py-10 sm:py-16 relative">
         <motion.div
           initial="hidden"
