@@ -14,7 +14,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
     }
   });
   const isOverlay = variant === "overlay";
-  const asideHeight = isOverlay ? "h-full" : "h-[calc(100vh-3.5rem)]";
+  const asideHeight = "h-screen";
 
   useEffect(() => {
     try {
@@ -52,7 +52,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
         ) : null}
       </div>
 
-      <nav className="flex flex-col gap-2 overflow-y-auto flex-1">
+      <nav className="flex flex-col gap-2 flex-1">
         <Link
           to="/app"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
