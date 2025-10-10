@@ -159,16 +159,36 @@ export default function Register() {
               </div>
 
               <motion.div variants={fade} custom={3} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Button variant="outline" className="w-full" disabled={!accepted || submitting} onClick={() => handleOAuth("google")}> 
+                <Button
+                  variant="outline"
+                  className="w-full transition-all hover:scale-[1.02] hover:bg-[#4285F4]/15 hover:text-foreground/90 hover:border-[#4285F4]/30"
+                  disabled={!accepted || submitting}
+                  onClick={() => handleOAuth("google")}
+                >
                   <Chrome className="mr-2 h-4 w-4" /> Google bilan
                 </Button>
-                <Button variant="outline" className="w-full" disabled={!accepted || submitting} onClick={() => handleOAuth("apple")}>
+                <Button
+                  variant="outline"
+                  className="w-full transition-all hover:scale-[1.02] hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground/90 hover:border-foreground/20"
+                  disabled={!accepted || submitting}
+                  onClick={() => handleOAuth("apple")}
+                >
                   <Apple className="mr-2 h-4 w-4" /> Apple bilan
                 </Button>
-                <Button variant="outline" className="w-full" disabled={!accepted || submitting} onClick={() => handleOAuth("facebook")}>
+                <Button
+                  variant="outline"
+                  className="w-full transition-all hover:scale-[1.02] hover:bg-[#1877F2]/15 hover:text-foreground/90 hover:border-[#1877F2]/30"
+                  disabled={!accepted || submitting}
+                  onClick={() => handleOAuth("facebook")}
+                >
                   <Facebook className="mr-2 h-4 w-4" /> Facebook bilan
                 </Button>
-                <Button variant="outline" className="w-full" disabled={!accepted || submitting} onClick={() => handleOAuth("github")}>
+                <Button
+                  variant="outline"
+                  className="w-full transition-all hover:scale-[1.02] hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground/90 hover:border-foreground/20"
+                  disabled={!accepted || submitting}
+                  onClick={() => handleOAuth("github")}
+                >
                   <Github className="mr-2 h-4 w-4" /> GitHub bilan
                 </Button>
               </motion.div>
