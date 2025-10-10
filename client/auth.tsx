@@ -37,6 +37,10 @@ interface AuthCtx {
     email?: string;
     name?: string;
   }) => Promise<boolean>;
+  oauthSignIn: (
+    provider: "google" | "github" | "facebook" | "apple",
+    profile?: { email?: string; name?: string }
+  ) => Promise<boolean>;
   addToBlocklist: (name: string) => void;
   removeFromBlocklist: (name: string) => void;
 }
@@ -173,19 +177,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveUsers(users);
   };
 
-  const googleSignIn = async (profile?: { email?: string; name?: string }) => {
+  const oauthSignIn = async (
+    provider: "google" | "github" | "facebook" | "apple",
+    profile?: { email?: string; name?: string },
+  ) => {
     const users = loadUsers();
-    const email = profile?.email ?? "google_demo@torex.com";
+    const defaultEmail = `${provider}_demo@torex.com`;
+    const email = profile?.email ?? defaultEmail;
     let found = users.find((u) => u.email === email);
     if (!found) {
+      const prefix =
+        provider === "google"
+          ? "g"
+          : provider === "github"
+            ? "gh"
+            : provider === "facebook"
+              ? "fb"
+              : "ap";
       const newUser: User = {
         email,
         password: "",
         isAdmin: false,
         accounts: [
           {
-            id: `g_${Math.random().toString(36).slice(2)}`,
-            name: profile?.name ? profile.name : "Google User",
+            id: `${prefix}_${Math.random().toString(36).slice(2)}`,
+            name: profile?.name
+              ? profile.name
+              : `${provider[0].toUpperCase()}${provider.slice(1)} User`,
             phone: undefined,
           },
         ],
@@ -200,6 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(found);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(found));
     return true;
+  };
+
+  const googleSignIn = async (profile?: { email?: string; name?: string }) => {
+    return oauthSignIn("google", profile);
   };
 
   const addToBlocklist = (name: string) => {
@@ -236,6 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       switchAccount,
       updateUser,
       googleSignIn,
+      oauthSignIn,
       addToBlocklist,
       removeFromBlocklist,
     }),
