@@ -22,6 +22,7 @@ import { RequireAuth, RequireAdmin } from "@/components/ProtectedRoute";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Security from "./pages/Security";
 import Help from "./pages/Help";
 import Partners from "./pages/Partners";
@@ -86,6 +87,7 @@ const App = () => (
                   }
                 />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route path="/security" element={<Security />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/partners" element={<Partners />} />
