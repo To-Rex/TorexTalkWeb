@@ -14,6 +14,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
     }
   });
   const isOverlay = variant === "overlay";
+  const asideHeight = isOverlay ? "h-full" : "h-[calc(100vh-3.5rem)]";
 
   useEffect(() => {
     try {
@@ -26,7 +27,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
   const showText = isOverlay ? true : !collapsed;
 
   return (
-    <aside className={`${asideWidth} bg-sidebar p-3 border-r flex flex-col gap-4 h-full`}>
+    <aside className={`${asideWidth} ${asideHeight} bg-sidebar p-3 border-r flex flex-col gap-4 overflow-hidden`}>
       <div className="flex items-center justify-between">
         <div className={`flex items-center ${itemLayout} flex-1`}>
           <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold">
@@ -51,7 +52,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
         ) : null}
       </div>
 
-      <nav className="flex flex-col gap-2 overflow-auto">
+      <nav className="flex flex-col gap-2 overflow-y-auto flex-1">
         <Link
           to="/app"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
