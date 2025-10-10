@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/auth";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessagesSquare, Settings } from "lucide-react";
 
 export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" | "overlay" }) {
   const location = useLocation();
@@ -14,6 +14,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
     }
   });
   const isOverlay = variant === "overlay";
+  const asideHeight = "h-screen";
 
   useEffect(() => {
     try {
@@ -26,7 +27,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
   const showText = isOverlay ? true : !collapsed;
 
   return (
-    <aside className={`${asideWidth} bg-sidebar p-3 border-r flex flex-col gap-4 h-full`}>
+    <aside className={`${asideWidth} ${asideHeight} bg-sidebar p-3 border-r flex flex-col gap-4 overflow-hidden`}>
       <div className="flex items-center justify-between">
         <div className={`flex items-center ${itemLayout} flex-1`}>
           <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground grid place-items-center font-bold">
@@ -51,7 +52,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
         ) : null}
       </div>
 
-      <nav className="flex flex-col gap-2 overflow-auto">
+      <nav className="flex flex-col gap-2 flex-1">
         <Link
           to="/app"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
@@ -60,15 +61,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
               : "hover:bg-accent/40"
           }`}
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M3 12l7-7 11 11-7 7L3 12z"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <MessagesSquare className="h-5 w-5" />
           {showText ? <span>Chats</span> : null}
         </Link>
         <Link
@@ -98,22 +91,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
               : "hover:bg-accent/40"
           }`}
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06A2 2 0 015.32 16.9l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82L4.2 5.32A2 2 0 016.02 2.5l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V1a2 2 0 014 0v.09c.12.63.64 1.12 1.26 1.26H16a1.65 1.65 0 001.82-.33l.06-.06A2 2 0 0119.8 5.32l-.06.06a1.65 1.65 0 00-.33 1.82V9c.63.12 1.12.64 1.26 1.26V11a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09c-.63.12-1.12.64-1.51 1z"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <Settings className="h-5 w-5" />
           {showText ? <span>Settings</span> : null}
         </Link>
       </nav>

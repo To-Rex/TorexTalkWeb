@@ -47,6 +47,9 @@ export default function Footer() {
         <div>
           <div className="font-semibold text-foreground mb-2">Hujjatlar</div>
           <div className="flex flex-col gap-2">
+            <Link to="/terms" className="hover:underline">
+              Oferta (Foydalanuvchi kelishuvi)
+            </Link>
             <Link to="/privacy" className="hover:underline">
               Maxfiylik siyosati
             </Link>
