@@ -27,9 +27,7 @@ export default function Header({
     <header className="sticky top-0 z-40 w-full border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-bold">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            TT
-          </span>
+          <img src="/logo.png" alt="TorexTalk" className="h-8 w-8" />
           <span>Torex-Talk</span>
         </Link>
         <nav className="flex items-center gap-2">

@@ -10,19 +10,16 @@ export default function Footer() {
       <div className="container py-8 sm:py-12 text-sm text-muted-foreground grid gap-8 sm:gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start">
         <div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
-              TT
-            </span>
+            <img src="/logo.png" alt="TorexTalk" className="h-9 w-9" />
             <div>
               <div className="font-semibold text-foreground">Torex-Talk</div>
               <div className="text-xs text-muted-foreground">
-                Telegram manager
+                {t("footer_telegram_manager")}
               </div>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed">
-            Xabarlarni avtomatlashtirish, mass xabar va AI-avtojavoblar uchun
-            qulay platforma.
+            {t("footer_description")}
           </p>
           <div className="mt-4 flex items-center gap-2">
             <a
@@ -42,39 +39,42 @@ export default function Footer() {
               @torex.dev
             </a>
           </div>
+          <div className="mt-2 text-xs">
+            {t("footer_developer")} <a href="https://torexdev.uz/" target="_blank" rel="noreferrer" className="underline hover:text-primary">torexdev.uz</a>
+          </div>
         </div>
 
         <div>
-          <div className="font-semibold text-foreground mb-2">Hujjatlar</div>
+          <div className="font-semibold text-foreground mb-2">{t("footer_documents")}</div>
           <div className="flex flex-col gap-2">
             <Link to="/terms" className="hover:underline">
-              Oferta (Foydalanuvchi kelishuvi)
+              {t("footer_terms")}
             </Link>
             <Link to="/privacy" className="hover:underline">
-              Maxfiylik siyosati
+              {t("footer_privacy")}
             </Link>
             <Link to="/security" className="hover:underline">
-              Ma'lumotlar xavfsizligi
+              {t("footer_security")}
             </Link>
           </div>
         </div>
 
         <div>
           <div className="font-semibold text-foreground mb-2">
-            Qo'llab-quvvatlash
+            {t("footer_support")}
           </div>
           <div className="flex flex-col gap-2">
             <Link to="/help" className="hover:underline">
-              Yordam
+              {t("footer_help")}
             </Link>
             <Link to="/partners" className="hover:underline">
-              Hamkorlik
+              {t("footer_partners")}
             </Link>
           </div>
         </div>
 
         <div>
-          <div className="font-semibold text-foreground mb-2">Aloqa</div>
+          <div className="font-semibold text-foreground mb-2">{t("footer_contact")}</div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-secondary">

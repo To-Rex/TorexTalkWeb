@@ -114,24 +114,21 @@ export default function Index() {
         </h2>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="rounded-xl border p-6 bg-card">
-            <h3 className="font-semibold mb-2">Mass xabar yuborish</h3>
+            <h3 className="font-semibold mb-2">{t("feature_mass_messaging_title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Yagona panel orqali yuzlab foydalanuvchilarga bir vaqtning oʻzida
-              xabar yuboring va yuborish jadvalini sozlang.
+              {t("feature_mass_messaging_desc")}
             </p>
           </div>
           <div className="rounded-xl border p-6 bg-card">
-            <h3 className="font-semibold mb-2">AI avtojavoblar</h3>
+            <h3 className="font-semibold mb-2">{t("feature_ai_replies_title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Savollarga avtomatik javoblar va shablonlar yaratish, bir savolga
-              bir nechta javob variantlari bilan.
+              {t("feature_ai_replies_desc")}
             </p>
           </div>
           <div className="rounded-xl border p-6 bg-card">
-            <h3 className="font-semibold mb-2">Tahlillar va statistikalar</h3>
+            <h3 className="font-semibold mb-2">{t("feature_analytics_title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Kampaniya samaradorligini kuzatib boring, ochilish va javob
-              ko'rsatkichlarini oling.
+              {t("feature_analytics_desc")}
             </p>
           </div>
         </div>
@@ -139,43 +136,39 @@ export default function Index() {
 
       {/* How it works */}
       <section className="container py-8 sm:py-12">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-6">Qanday ishlaydi</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-6">{t("how_it_works")}</h2>
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="rounded-xl border p-6 bg-card">
-            <div className="text-3xl font-extrabold mb-2">1</div>
-            <h4 className="font-semibold mb-2">Hisobni ulang</h4>
-            <p className="text-sm text-muted-foreground">
-              Google yoki email orqali ro'yxatdan o'ting va Telegram
-              hisobingizni ulang.
-            </p>
-          </div>
-          <div className="rounded-xl border p-6 bg-card">
-            <div className="text-3xl font-extrabold mb-2">2</div>
-            <h4 className="font-semibold mb-2">Avtomatlashtiring</h4>
-            <p className="text-sm text-muted-foreground">
-              Auto-replies, shablonlar va mass-xabarlar yordamida muloqotni
-              avtomatlashtiring.
-            </p>
-          </div>
-          <div className="rounded-xl border p-6 bg-card">
-            <div className="text-3xl font-extrabold mb-2">3</div>
-            <h4 className="font-semibold mb-2">O'lchang</h4>
-            <p className="text-sm text-muted-foreground">
-              Statistikalar orqali natijalarni tahlil qiling va strategiyani
-              optimallashtiring.
-            </p>
-          </div>
-        </div>
+           <div className="rounded-xl border p-6 bg-card">
+             <div className="text-3xl font-extrabold mb-2">1</div>
+             <h4 className="font-semibold mb-2">{t("step1_title")}</h4>
+             <p className="text-sm text-muted-foreground">
+               {t("step1_desc")}
+             </p>
+           </div>
+           <div className="rounded-xl border p-6 bg-card">
+             <div className="text-3xl font-extrabold mb-2">2</div>
+             <h4 className="font-semibold mb-2">{t("step2_title")}</h4>
+             <p className="text-sm text-muted-foreground">
+               {t("step2_desc")}
+             </p>
+           </div>
+           <div className="rounded-xl border p-6 bg-card">
+             <div className="text-3xl font-extrabold mb-2">3</div>
+             <h4 className="font-semibold mb-2">{t("step3_title")}</h4>
+             <p className="text-sm text-muted-foreground">
+               {t("step3_desc")}
+             </p>
+           </div>
+         </div>
       </section>
 
       {/* Integrations & CTA */}
       <section className="container py-8 sm:py-12">
         <div className="rounded-xl border p-8 bg-card flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
-            <h3 className="text-xl font-semibold mb-2">Integratsiyalar</h3>
+            <h3 className="text-xl font-semibold mb-2">{t("integrations_title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Google auth, Email, va boshqalar bilan osongina integratsiya
-              qilinadi.
+              {t("integrations_desc")}
             </p>
           </div>
           <div className="flex gap-3">
@@ -192,18 +185,17 @@ export default function Index() {
       {/* Testimonials */}
       <section className="container py-8 sm:py-12">
         <h2 className="text-2xl sm:text-3xl font-bold mb-6">
-          Foydalanuvchi fikrlari
+          {t("testimonials_title")}
         </h2>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="rounded-xl border p-6 bg-card">
-            “Sodda va kuchli — mijozlarimiz bilan muloqotni avtomatlashtirdik.”
+            {t("testimonial1")}
           </div>
           <div className="rounded-xl border p-6 bg-card">
-            “Mass xabarlar va tahlillar yordamida kampaniyalarimiz natijasi
-            yaxshilandi.”
+            {t("testimonial2")}
           </div>
           <div className="rounded-xl border p-6 bg-card">
-            “Auto-replies funksiyasi va shablonlar juda foydali.”
+            {t("testimonial3")}
           </div>
         </div>
       </section>
