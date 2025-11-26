@@ -21,8 +21,8 @@ export default function Index() {
 
     const animate = () => {
       setMousePos(prev => ({
-        x: prev.x + (mouseRef.current.x - prev.x) * 0.05,
-        y: prev.y + (mouseRef.current.y - prev.y) * 0.05,
+        x: prev.x + (mouseRef.current.x - prev.x) * 0.1,
+        y: prev.y + (mouseRef.current.y - prev.y) * 0.1,
       }));
       requestAnimationFrame(animate);
     };
