@@ -10,17 +10,20 @@ export interface ChatItem {
 
 import { Input } from "@/components/ui/input";
 import { X, Search } from "lucide-react";
+import { User } from "@/auth";
 
 export default function ChatSidebar({
   chats,
   currentId,
   onSelect,
   onCreateChat,
+  user,
 }: {
   chats: ChatItem[];
   currentId: string | null;
   onSelect: (id: string) => void;
   onCreateChat?: (payload: { name: string; type: "private" | "group" }) => void;
+  user: User | null;
 }) {
   const [tab, setTab] = useState<"private" | "group">("private");
   const [query, setQuery] = useState("");
@@ -141,6 +144,13 @@ export default function ChatSidebar({
             ))}
           </div>
         ) : null}
+      </div>
+
+      <div className="mt-auto pt-2 border-t shrink-0">
+        <div className="text-xs text-muted-foreground mb-2 px-2">Account</div>
+        <div className="px-2">
+          <div className="text-sm text-foreground">{user?.email}</div>
+        </div>
       </div>
     </aside>
   );

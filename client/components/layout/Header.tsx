@@ -9,9 +9,11 @@ import { useState } from "react";
 export default function Header({
   onOpenMobileNav,
   showMobileNavButton,
+  className,
 }: {
   onOpenMobileNav?: () => void;
   showMobileNavButton?: boolean;
+  className?: string;
 }) {
   const { t } = useI18n();
   const { pathname } = useLocation();
@@ -24,8 +26,8 @@ export default function Header({
   const [adminOpen, setAdminOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
+    <header className={`w-full border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className || "sticky top-0 z-40"}`}>
+      <div className="w-full px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-bold">
           <img src="/logo.png" alt="TorexTalk" className="h-8 w-8" />
           <span>Torex-Talk</span>

@@ -77,7 +77,7 @@ export default function Register() {
 
   return (
     <section className="relative">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.accent/10),transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.1),transparent_60%),radial-gradient(ellipse_at_bottom,hsl(var(--accent)/0.1),transparent_60%)]" />
       <div className="container py-10 sm:py-16 relative">
         <motion.div initial="hidden" animate="show" className="mx-auto max-w-lg">
           <Card className="overflow-hidden border-0 shadow-lg shadow-primary/10">

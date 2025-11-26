@@ -27,22 +27,20 @@ export default function MainLayout({
   const hideFooter = Boolean(user) && noFooterPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen">
       <AppHeader
+        className="fixed top-0 left-0 right-0 z-50"
         onOpenMobileNav={() => setMobileOpen(true)}
         showMobileNavButton={showSidebar}
       />
-      <div className="flex-1 flex">
-        {showSidebar ? (
-          <div className="hidden md:block">
-            <NavMenu />
-          </div>
-        ) : null}
-        <main className="flex-1 pt-4 sm:pt-6 overflow-x-hidden">
-          {children}
-        </main>
-      </div>
-      {hideFooter ? null : <Footer />}
+      {showSidebar ? (
+        <div className="fixed top-14 left-0 h-screen z-40 hidden md:block">
+          <NavMenu />
+        </div>
+      ) : null}
+      <main className={`${showSidebar ? "md:ml-64 lg:ml-72" : ""} pt-16 h-screen overflow-x-hidden overflow-y-auto`}>
+        {children}
+      </main>
 
       {showSidebar && mobileOpen ? (
         <div className="fixed inset-0 z-50 md:hidden">

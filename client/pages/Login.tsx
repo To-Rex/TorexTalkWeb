@@ -77,7 +77,7 @@ export default function Login() {
 
   return (
     <section className="relative">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.accent/10),transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.1),transparent_60%),radial-gradient(ellipse_at_bottom,hsl(var(--accent)/0.1),transparent_60%)]" />
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -top-10 -left-10 h-72 w-72 rounded-full bg-primary/20 blur-3xl"
@@ -104,8 +104,8 @@ export default function Login() {
         >
           <Card className="overflow-hidden border-0 shadow-lg shadow-primary/10">
             <CardHeader className="text-center pb-2">
-              <motion.div variants={fade} className="mx-auto h-12 w-12 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
-                <span className="font-bold">TT</span>
+              <motion.div variants={fade} className="mx-auto h-12 w-12 rounded-lg flex items-center justify-center">
+                <img src="/logo.png" alt="TorexTalk" className="h-12 w-12" />
               </motion.div>
               <motion.div variants={fade} custom={1}>
                 <CardTitle className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
