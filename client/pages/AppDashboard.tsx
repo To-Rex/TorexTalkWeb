@@ -15,11 +15,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, ChevronDown } from "lucide-react";
 
 export default function AppDashboard() {
-  const { user, switchAccount } = useAuth();
+  const { user, switchTelegramAccount } = useAuth();
   const isMobile = useIsMobile();
   const [otpOpen, setOtpOpen] = useState(false);
   const [massOpen, setMassOpen] = useState(false);
@@ -41,21 +42,21 @@ export default function AppDashboard() {
   }, [sidebarCollapsed]);
 
   const [chats, setChats] = useState<ChatItem[]>([
-    { id: "1", name: "Ali", type: "private", unread: 1, avatar: "/placeholder.svg" },
-    { id: "2", name: "Nodira", type: "private", avatar: "/placeholder.svg" },
-    { id: "3", name: "Jamshid", type: "private", avatar: "/placeholder.svg" },
-    { id: "4", name: "Support", type: "private", avatar: "/placeholder.svg" },
-    { id: "7", name: "Dilshod", type: "private", avatar: "/placeholder.svg" },
-    { id: "8", name: "Madina", type: "private", avatar: "/placeholder.svg" },
-    { id: "9", name: "Bekzod", type: "private", avatar: "/placeholder.svg" },
-    { id: "10", name: "Javlon", type: "private", avatar: "/placeholder.svg" },
-    { id: "11", name: "Sardor", type: "private", avatar: "/placeholder.svg" },
-    { id: "12", name: "Nigora", type: "private", avatar: "/placeholder.svg" },
-    { id: "5", name: "Marketing", type: "group", unread: 12, avatar: "/placeholder.svg" },
-    { id: "6", name: "Savdo", type: "group", avatar: "/placeholder.svg" },
-    { id: "13", name: "Frontend Devs", type: "group", avatar: "/placeholder.svg" },
-    { id: "14", name: "Support Team", type: "group", avatar: "/placeholder.svg" },
-    { id: "15", name: "Family", type: "group", avatar: "/placeholder.svg" },
+    { id: "1", name: "Ali", type: "private", unread: 1, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" },
+    { id: "2", name: "Nodira", type: "private", avatar: "https://ix-marketing.imgix.net/focalpoint.png?auto=format,compress&w=1946" },
+    { id: "3", name: "Jamshid", type: "private", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" },
+    { id: "4", name: "Support", type: "private" },
+    { id: "7", name: "Dilshod", type: "private", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face" },
+    { id: "8", name: "Madina", type: "private" },
+    { id: "9", name: "Bekzod", type: "private", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face" },
+    { id: "10", name: "Javlon", type: "private" },
+    { id: "11", name: "Sardor", type: "private", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&crop=face" },
+    { id: "12", name: "Nigora", type: "private" },
+    { id: "5", name: "Marketing", type: "group", unread: 12, avatar: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=100&h=100&fit=crop" },
+    { id: "6", name: "Savdo", type: "group" },
+    { id: "13", name: "Frontend Devs", type: "group", avatar: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=100&h=100&fit=crop" },
+    { id: "14", name: "Support Team", type: "group" },
+    { id: "15", name: "Family", type: "group", avatar: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=100&h=100&fit=crop" },
   ]);
 
   // messages keyed by chat id
@@ -65,23 +66,513 @@ export default function AppDashboard() {
         id: "m1",
         sender: "them",
         text: "Salom! Yordam bera olamanmi?",
-        at: Date.now() - 60000,
+        at: Date.now() - 600000,
       },
       {
         id: "m2",
         sender: "me",
         text: "Assalomu alaykum! Ha, hisob ulashmoqchi edim.",
+        at: Date.now() - 570000,
+      },
+      {
+        id: "m3",
+        sender: "them",
+        text: "Qaysi hisob haqida gapiryapsiz?",
+        at: Date.now() - 540000,
+      },
+      {
+        id: "m4",
+        sender: "me",
+        text: "Telegram hisobim haqida. Yangi loyihamiz uchun.",
+        at: Date.now() - 510000,
+      },
+      {
+        id: "m5",
+        sender: "them",
+        text: "Tushundim. Ma'lumotlaringizni yuboring.",
+        at: Date.now() - 480000,
+      },
+      {
+        id: "m6",
+        sender: "me",
+        text: "Albatta, hoziroq yuboraman.",
+        at: Date.now() - 450000,
+      },
+      {
+        id: "m7",
+        sender: "them",
+        text: "Rahmat. Ko'rib chiqaman.",
         at: Date.now() - 30000,
+      },
+    ],
+    "2": [
+      {
+        id: "m8",
+        sender: "them",
+        text: "Qanday yordam kerak?",
+        at: Date.now() - 720000,
+      },
+      {
+        id: "m9",
+        sender: "me",
+        text: "Mahsulot haqida ma'lumot beraman.",
+        at: Date.now() - 690000,
+      },
+      {
+        id: "m10",
+        sender: "them",
+        text: "Qaysi mahsulot?",
+        at: Date.now() - 660000,
+      },
+      {
+        id: "m11",
+        sender: "me",
+        text: "Yangi smartfon modelimiz.",
+        at: Date.now() - 630000,
+      },
+      {
+        id: "m12",
+        sender: "them",
+        text: "Narxi qancha?",
+        at: Date.now() - 600000,
+      },
+      {
+        id: "m13",
+        sender: "me",
+        text: "2 million so'mdan boshlanadi.",
+        at: Date.now() - 570000,
+      },
+      {
+        id: "m14",
+        sender: "them",
+        text: "Qiziqarli. Ko'proq ma'lumot bering.",
+        at: Date.now() - 120000,
+      },
+    ],
+    "3": [
+      {
+        id: "m15",
+        sender: "them",
+        text: "Loyiha qachon tugaydi?",
+        at: Date.now() - 900000,
+      },
+      {
+        id: "m16",
+        sender: "me",
+        text: "Keyingi oy oxirida.",
+        at: Date.now() - 870000,
+      },
+      {
+        id: "m17",
+        sender: "them",
+        text: "Jadvalga rioya qilamizmi?",
+        at: Date.now() - 840000,
+      },
+      {
+        id: "m18",
+        sender: "me",
+        text: "Ha, barcha vazifalar bajarildi.",
+        at: Date.now() - 810000,
+      },
+      {
+        id: "m19",
+        sender: "them",
+        text: "Ajoyib! Mijozga xabar beraman.",
+        at: Date.now() - 180000,
+      },
+    ],
+    "4": [
+      {
+        id: "m20",
+        sender: "them",
+        text: "Texnik yordam kerak.",
+        at: Date.now() - 1080000,
+      },
+      {
+        id: "m21",
+        sender: "me",
+        text: "Qanday muammo bor?",
+        at: Date.now() - 1050000,
+      },
+      {
+        id: "m22",
+        sender: "them",
+        text: "Kompyuter sekin ishlayapti.",
+        at: Date.now() - 1020000,
+      },
+      {
+        id: "m23",
+        sender: "me",
+        text: "Qaysi operatsion sistema?",
+        at: Date.now() - 990000,
+      },
+      {
+        id: "m24",
+        sender: "them",
+        text: "Windows 10.",
+        at: Date.now() - 960000,
+      },
+      {
+        id: "m25",
+        sender: "me",
+        text: "Diagnostika qilaman. Kuting.",
+        at: Date.now() - 240000,
+      },
+    ],
+    "5": [
+      {
+        id: "m26",
+        sender: "user1",
+        text: "Yangi kampaniya boshlandi!",
+        at: Date.now() - 1200000,
+      },
+      {
+        id: "m27",
+        sender: "user2",
+        text: "Ajoyib! Qanday natija kutmoqdamiz?",
+        at: Date.now() - 1170000,
+      },
+      {
+        id: "m28",
+        sender: "me",
+        text: "Kampaniya muvaffaqiyatli bo'lsin!",
+        at: Date.now() - 1140000,
+      },
+      {
+        id: "m29",
+        sender: "user3",
+        text: "Men ham qo'shilaman!",
+        at: Date.now() - 1110000,
+      },
+      {
+        id: "m30",
+        sender: "user4",
+        text: "Byudjet qancha?",
+        at: Date.now() - 1080000,
+      },
+      {
+        id: "m31",
+        sender: "me",
+        text: "5 million so'm ajratildi.",
+        at: Date.now() - 1050000,
+      },
+      {
+        id: "m32",
+        sender: "user1",
+        text: "Yaxshi, boshladik!",
+        at: Date.now() - 300000,
+      },
+    ],
+    "6": [
+      {
+        id: "m33",
+        sender: "user3",
+        text: "Savdo ko'rsatkichlari yaxshi.",
+        at: Date.now() - 1320000,
+      },
+      {
+        id: "m34",
+        sender: "me",
+        text: "Qaysi oy uchun?",
+        at: Date.now() - 1290000,
+      },
+      {
+        id: "m35",
+        sender: "user3",
+        text: "O'tgan oy.",
+        at: Date.now() - 1260000,
+      },
+      {
+        id: "m36",
+        sender: "me",
+        text: "Foiz qancha o'sish bor?",
+        at: Date.now() - 1230000,
+      },
+      {
+        id: "m37",
+        sender: "user3",
+        text: "15% o'sish.",
+        at: Date.now() - 360000,
+      },
+    ],
+    "7": [
+      {
+        id: "m38",
+        sender: "them",
+        text: "Salom do'stim!",
+        at: Date.now() - 1440000,
+      },
+      {
+        id: "m39",
+        sender: "me",
+        text: "Salom! Qandaysan?",
+        at: Date.now() - 1410000,
+      },
+      {
+        id: "m40",
+        sender: "them",
+        text: "Yaxshi, rahmat. Sen-chi?",
+        at: Date.now() - 1380000,
+      },
+      {
+        id: "m41",
+        sender: "me",
+        text: "Men ham yaxshi. Ishlar qalay?",
+        at: Date.now() - 420000,
+      },
+    ],
+    "8": [
+      {
+        id: "m42",
+        sender: "them",
+        text: "Yordam bera olasizmi?",
+        at: Date.now() - 1560000,
+      },
+      {
+        id: "m43",
+        sender: "me",
+        text: "Albatta, nima yordam kerak?",
+        at: Date.now() - 1530000,
+      },
+      {
+        id: "m44",
+        sender: "them",
+        text: "Darsda tushunmaganman.",
+        at: Date.now() - 1500000,
+      },
+      {
+        id: "m45",
+        sender: "me",
+        text: "Qaysi mavzu?",
+        at: Date.now() - 1470000,
+      },
+      {
+        id: "m46",
+        sender: "them",
+        text: "Matematika.",
+        at: Date.now() - 480000,
+      },
+    ],
+    "9": [
+      {
+        id: "m47",
+        sender: "them",
+        text: "Loyiha muhokamasi.",
+        at: Date.now() - 1680000,
+      },
+      {
+        id: "m48",
+        sender: "me",
+        text: "Qachon uchrashamiz?",
+        at: Date.now() - 1650000,
+      },
+      {
+        id: "m49",
+        sender: "them",
+        text: "Ertaga soat 10:00 da.",
+        at: Date.now() - 1620000,
+      },
+      {
+        id: "m50",
+        sender: "me",
+        text: "Yaxshi, kelaman.",
+        at: Date.now() - 540000,
+      },
+    ],
+    "10": [
+      {
+        id: "m51",
+        sender: "them",
+        text: "Tadbir haqida gaplashaylik.",
+        at: Date.now() - 1800000,
+      },
+      {
+        id: "m52",
+        sender: "me",
+        text: "Qaysi tadbir?",
+        at: Date.now() - 1770000,
+      },
+      {
+        id: "m53",
+        sender: "them",
+        text: "Kompaniya yubileyi.",
+        at: Date.now() - 1740000,
+      },
+      {
+        id: "m54",
+        sender: "me",
+        text: "Qachon bo'ladi?",
+        at: Date.now() - 1710000,
+      },
+      {
+        id: "m55",
+        sender: "them",
+        text: "Keyingi oy.",
+        at: Date.now() - 600000,
+      },
+    ],
+    "11": [
+      {
+        id: "m56",
+        sender: "them",
+        text: "Yangi loyiha taklifi.",
+        at: Date.now() - 1920000,
+      },
+      {
+        id: "m57",
+        sender: "me",
+        text: "Qanday loyiha?",
+        at: Date.now() - 1890000,
+      },
+      {
+        id: "m58",
+        sender: "them",
+        text: "Mobil ilova.",
+        at: Date.now() - 1860000,
+      },
+      {
+        id: "m59",
+        sender: "me",
+        text: "Qiziq. Batafsil aytib bering.",
+        at: Date.now() - 660000,
+      },
+    ],
+    "12": [
+      {
+        id: "m60",
+        sender: "them",
+        text: "Uchrashuv belgilaylik.",
+        at: Date.now() - 2040000,
+      },
+      {
+        id: "m61",
+        sender: "me",
+        text: "Qachon qulay?",
+        at: Date.now() - 2010000,
+      },
+      {
+        id: "m62",
+        sender: "them",
+        text: "Bugun kechqurun.",
+        at: Date.now() - 1980000,
+      },
+      {
+        id: "m63",
+        sender: "me",
+        text: "Soat 18:00 da bo'ladi.",
+        at: Date.now() - 720000,
+      },
+    ],
+    "13": [
+      {
+        id: "m64",
+        sender: "user4",
+        text: "Frontend kod review qilindi.",
+        at: Date.now() - 2160000,
+      },
+      {
+        id: "m65",
+        sender: "user5",
+        text: "Yaxshi ish! Bug'lar tuzatildi.",
+        at: Date.now() - 2130000,
+      },
+      {
+        id: "m66",
+        sender: "me",
+        text: "Rahmat jamoa!",
+        at: Date.now() - 2100000,
+      },
+      {
+        id: "m67",
+        sender: "user6",
+        text: "Testlar o'tkazildi.",
+        at: Date.now() - 2070000,
+      },
+      {
+        id: "m68",
+        sender: "user4",
+        text: "Deployment tayyor.",
+        at: Date.now() - 2040000,
+      },
+      {
+        id: "m69",
+        sender: "me",
+        text: "Ajoyib! Deploy qilamiz.",
+        at: Date.now() - 780000,
+      },
+    ],
+    "14": [
+      {
+        id: "m70",
+        sender: "user6",
+        text: "Mijoz shikoyati kelib tushdi.",
+        at: Date.now() - 2280000,
+      },
+      {
+        id: "m71",
+        sender: "me",
+        text: "Qanday shikoyat?",
+        at: Date.now() - 2250000,
+      },
+      {
+        id: "m72",
+        sender: "user6",
+        text: "Yetkazib berish kechikdi.",
+        at: Date.now() - 2220000,
+      },
+      {
+        id: "m73",
+        sender: "me",
+        text: "Mijozga uzr so'raymiz.",
+        at: Date.now() - 2190000,
+      },
+      {
+        id: "m74",
+        sender: "user6",
+        text: "Yaxshi, men hal qilaman.",
+        at: Date.now() - 840000,
+      },
+    ],
+    "15": [
+      {
+        id: "m75",
+        sender: "user7",
+        text: "Oilaviy uchrashuv rejalashtirildi.",
+        at: Date.now() - 2400000,
+      },
+      {
+        id: "m76",
+        sender: "me",
+        text: "Qachon?",
+        at: Date.now() - 2370000,
+      },
+      {
+        id: "m77",
+        sender: "user7",
+        text: "Shanba kuni.",
+        at: Date.now() - 2340000,
+      },
+      {
+        id: "m78",
+        sender: "me",
+        text: "Barcha keladimi?",
+        at: Date.now() - 2310000,
+      },
+      {
+        id: "m79",
+        sender: "user7",
+        text: "Ha, hamma keladi.",
+        at: Date.now() - 900000,
       },
     ],
   });
 
   const [currentId, setCurrentId] = useState<string | null>(null);
 
-  // if user has activeAccountId, show it
-  const activeAccount =
-    user?.accounts.find((a) => a.id === user.activeAccountId) ??
-    user?.accounts[0] ??
+  // if user has activeTelegramAccountId, show it
+  const activeTelegramAccount =
+    user?.telegramAccounts.find((a) => a.id === user.activeTelegramAccountId) ??
+    user?.telegramAccounts[0] ??
     null;
 
   useEffect(() => {
@@ -175,18 +666,36 @@ export default function AppDashboard() {
     <div className="py-6 px-6">
       <div className="mb-3 flex items-center justify-between">
         <div className="hidden md:flex items-center gap-3">
-          <button
-            onClick={() => setAccountsOpen(true)}
-            className="inline-flex flex-col text-sm text-left hover:opacity-90"
-          >
-            <div className="text-muted-foreground text-xs">Hozirgi hisob</div>
-            <div className="font-medium">
-              {activeAccount
-                ? `${activeAccount.name} ${activeAccount.phone ? `(${activeAccount.phone})` : ""}`
-                : "— hisob tanlanmagan —"}
-            </div>
-          </button>
-          <Button size="sm" onClick={() => setOtpOpen(true)}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex flex-col text-sm text-left hover:opacity-90">
+                <div className="text-muted-foreground text-xs flex items-center gap-1">
+                  Hozirgi hisob <ChevronDown className="h-3 w-3" />
+                </div>
+                <div className="font-medium">
+                  {activeTelegramAccount
+                    ? `${activeTelegramAccount.name} ${activeTelegramAccount.phone ? `(${activeTelegramAccount.phone})` : ""}`
+                    : "— hisob tanlanmagan —"}
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {user?.telegramAccounts.map((acc) => (
+                <DropdownMenuItem
+                  key={acc.id}
+                  onClick={() => switchTelegramAccount(acc.id)}
+                  className={acc.id === user.activeTelegramAccountId ? "bg-accent" : ""}
+                >
+                  {acc.name} {acc.phone ? `(${acc.phone})` : ""}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setAccountsOpen(true)}>
+                Hisob boshqarish
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" onClick={() => setOtpOpen(true)} className="text-white">
             Hisob qo'shish
           </Button>
           <Button
@@ -213,7 +722,7 @@ export default function AppDashboard() {
         </div>
         <div className="md:hidden flex items-center gap-2">
           <div className="text-xs text-muted-foreground">
-            {activeAccount ? activeAccount.name : "Hisob yo'q"}
+            {activeTelegramAccount ? activeTelegramAccount.name : "Hisob yo'q"}
           </div>
           <MobileActions
             onAdd={() => setOtpOpen(true)}
@@ -244,6 +753,7 @@ export default function AppDashboard() {
                 title={currentName}
                 status="online"
                 messages={currentMessages}
+                collapsed={sidebarCollapsed}
               />
             </div>
             <MessageComposer onSend={send} />

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/auth";
 import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface FileAttachment {
   type: "image" | "audio" | "document" | "location";
@@ -10,7 +11,7 @@ export interface FileAttachment {
 
 export interface Message {
   id: string;
-  sender: "me" | "them";
+  sender: string;
   text?: string;
   at: number;
   file?: FileAttachment;
@@ -21,11 +22,13 @@ export default function ChatWindow({
   status,
   messages,
   onBack,
+  collapsed = false,
 }: {
   title: string;
   status: string;
   messages: Message[];
   onBack?: () => void;
+  collapsed?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { user, addToBlocklist, removeFromBlocklist } = useAuth();
@@ -97,8 +100,13 @@ export default function ChatWindow({
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`w-fit max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.sender === "me" ? "ml-auto bg-primary text-primary-foreground" : "bg-secondary"}`}
+            className={`w-fit max-w-[80%] rounded-lg px-3 py-2 text-sm text-white ${m.sender === "me" ? `ml-auto bg-primary` : "bg-secondary"}`}
           >
+            {m.sender !== "me" ? (
+              <div className="text-xs font-medium text-white mb-1">
+                {m.sender === "them" ? title : m.sender}
+              </div>
+            ) : null}
             {m.text ? (
               <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
             ) : null}
@@ -141,7 +149,7 @@ export default function ChatWindow({
                 </div>
               )
             ) : null}
-            <div className="text-[10px] text-muted-foreground mt-1">
+            <div className="text-[10px] text-white mt-1">
               {new Date(m.at).toLocaleTimeString()}
             </div>
           </div>

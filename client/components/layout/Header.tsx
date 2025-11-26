@@ -97,7 +97,27 @@ export default function Header({
                   Admin kirish
                 </Button>
               )}
-              <div className="text-sm hidden sm:block px-2">{user.email}</div>
+              <div className="flex items-center gap-2 hidden sm:flex mr-4">
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt="Avatar"
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold text-xs">
+                    {(user.name || user.email.split('@')[0]).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <div className="text-sm font-medium text-foreground">
+                    {user.name || user.email.split('@')[0]}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {user.email}
+                  </div>
+                </div>
+              </div>
               <Button
                 size="sm"
                 variant="outline"

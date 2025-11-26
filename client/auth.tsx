@@ -11,6 +11,8 @@ export interface TelegramAccount {
   id: string;
   name: string;
   phone?: string;
+  username?: string;
+  telegram_id?: number;
 }
 
 export interface User {
@@ -20,10 +22,13 @@ export interface User {
   avatar?: string;
   isAdmin?: boolean;
   accounts: TelegramAccount[];
+  telegramAccounts: TelegramAccount[];
+  activeTelegramAccountId?: string | null;
   activeAccountId?: string | null;
   settings?: {
     aiForGroups?: boolean;
     aiForPrivate?: boolean;
+    plan?: string;
   };
   blocklist?: string[]; // list of chat names to exclude from mass messages
 }
@@ -35,6 +40,8 @@ interface AuthCtx {
   logout: () => void;
   addAccount: (acc: TelegramAccount) => void;
   switchAccount: (accountId: string) => void;
+  fetchTelegramAccounts: () => Promise<void>;
+  switchTelegramAccount: (accountId: string) => void;
   updateUser: (fn: (u: User) => User) => void;
   googleSignIn: (profile?: {
     email?: string;
@@ -68,7 +75,9 @@ function loadUsers(): User[] {
           password: "adminpass",
           isAdmin: true,
           accounts: [],
+          telegramAccounts: [],
           activeAccountId: null,
+          activeTelegramAccountId: null,
           settings: { aiForGroups: true, aiForPrivate: false },
           blocklist: [],
         },
@@ -79,7 +88,9 @@ function loadUsers(): User[] {
           accounts: [
             { id: "acc1", name: "Demo Account 1", phone: "+998901234567" },
           ],
+          telegramAccounts: [],
           activeAccountId: "acc1",
+          activeTelegramAccountId: null,
           settings: { aiForGroups: true, aiForPrivate: true },
           blocklist: [],
         },
@@ -125,7 +136,9 @@ function mapSupabaseUserToUser(supabaseUser: SupabaseUser): User {
     avatar,
     isAdmin: supabaseUser.app_metadata?.role === 'admin' || false,
     accounts: [],
+    telegramAccounts: [],
     activeAccountId: null,
+    activeTelegramAccountId: null,
     settings: { aiForGroups: false, aiForPrivate: false },
     blocklist: [],
   };
@@ -158,6 +171,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchTelegramAccounts();
+    }
+  }, [user?.email]); // Only when user email changes
 
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -208,6 +227,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchAccount = (accountId: string) => {
     if (!user) return;
     const updated = { ...user, activeAccountId: accountId };
+    setUser(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    const users = loadUsers().map((u) =>
+      u.email === updated.email ? updated : u,
+    );
+    saveUsers(users);
+  };
+
+  const fetchTelegramAccounts = async () => {
+    if (!user) return;
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) return;
+
+      const response = await fetch('https://talkapp.up.railway.app/me/telegrams', {
+        headers: {
+          'Authorization': `Bearer ${session.session.access_token}`,
+        },
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.ok && data.telegram_accounts) {
+        const telegramAccounts: TelegramAccount[] = data.telegram_accounts.map((acc: any) => ({
+          id: acc.telegram_id.toString(),
+          name: acc.full_name,
+          phone: acc.phone_number,
+          username: acc.username,
+          telegram_id: acc.telegram_id,
+        }));
+        const updated = { ...user, telegramAccounts };
+        if (!user.activeTelegramAccountId && telegramAccounts.length > 0) {
+          updated.activeTelegramAccountId = telegramAccounts[0].id;
+        }
+        setUser(updated);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        const users = loadUsers().map((u) =>
+          u.email === updated.email ? updated : u,
+        );
+        saveUsers(users);
+      }
+    } catch (error) {
+      console.error('Failed to fetch Telegram accounts:', error);
+    }
+  };
+
+  const switchTelegramAccount = (accountId: string) => {
+    if (!user) return;
+    const updated = { ...user, activeTelegramAccountId: accountId };
     setUser(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     const users = loadUsers().map((u) =>
@@ -277,6 +345,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       addAccount,
       switchAccount,
+      fetchTelegramAccounts,
+      switchTelegramAccount,
       updateUser,
       googleSignIn,
       oauthSignIn,

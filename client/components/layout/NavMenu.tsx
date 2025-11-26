@@ -39,7 +39,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
           to="/app"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
             location.pathname.startsWith("/app")
-              ? "bg-primary text-primary-foreground"
+              ? "bg-primary text-white"
               : "hover:bg-accent/40"
           }`}
         >
@@ -50,7 +50,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
           to="/auto-replies"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
             location.pathname.startsWith("/auto-replies")
-              ? "bg-primary text-primary-foreground"
+              ? "bg-primary text-white"
               : "hover:bg-accent/40"
           }`}
         >
@@ -69,7 +69,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
           to="/settings"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
             location.pathname.startsWith("/settings")
-              ? "bg-primary text-primary-foreground"
+              ? "bg-primary text-white"
               : "hover:bg-accent/40"
           }`}
         >
@@ -95,11 +95,18 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
                 </div>
               )}
               {!collapsed && (
-                <div>
-                  <div className="text-sm font-medium text-foreground">
-                    {user.name || user.email.split('@')[0]}
+                <div className="flex items-center gap-2">
+                  <div>
+                    <div className="text-sm font-medium text-foreground">
+                      {user.name || user.email.split('@')[0]}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{user.settings?.plan ?? "Free"}</div>
                   </div>
-                  <div className="text-xs text-muted-foreground">{user.email}</div>
+                  {(user.settings?.plan ?? "Free") === "Free" && (
+                    <Link to="/pricing" className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary/90">
+                      Upgrade
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

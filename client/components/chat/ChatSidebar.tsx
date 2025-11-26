@@ -56,7 +56,8 @@ export default function ChatSidebar({
   return (
     <aside className={`${collapsed ? "w-16" : "w-full md:w-64 lg:w-72"} border-r bg-secondary/30 flex flex-col h-full min-h-0 transition-all duration-200`}>
       {onToggleCollapsed && (
-        <div className="flex justify-end p-2 shrink-0">
+        <div className="flex justify-between items-center p-2 shrink-0">
+          {!collapsed && <div className="text-sm font-medium">Chat</div>}
           <button
             onClick={onToggleCollapsed}
             className="inline-flex items-center justify-center rounded-md p-2 text-sm hover:bg-background"
@@ -112,7 +113,7 @@ export default function ChatSidebar({
           <button
             key={c.id}
             onClick={() => onSelect(c.id)}
-            className={`w-full flex items-center justify-between rounded-lg px-3 py-2 text-left ${
+            className={`w-full flex items-center justify-between rounded-lg ${collapsed ? "px-1" : "px-3"} py-2 text-left ${
               currentId === c.id
                 ? "bg-background border"
                 : "hover:bg-background/60"
@@ -123,10 +124,10 @@ export default function ChatSidebar({
                 <img
                   src={c.avatar}
                   alt={c.name}
-                  className="h-10 w-10 rounded-full object-cover"
+                  className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full object-cover`}
                 />
               ) : (
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold">
+                <div className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold ${collapsed ? "text-xs" : ""}`}>
                   {c.name
                     .split(" ")
                     .map((s) => s[0])
@@ -166,36 +167,6 @@ export default function ChatSidebar({
         ) : null}
       </div>
 
-      <div className="mt-auto pt-2 border-t shrink-0">
-        {!collapsed && <div className="text-xs text-muted-foreground mb-2 px-2">Account</div>}
-        <div className={`px-2 ${collapsed ? "flex justify-center" : ""}`}>
-          {user ? (
-            <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
-              {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt="Avatar"
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold text-xs">
-                  {(user.name || user.email.split('@')[0]).charAt(0).toUpperCase()}
-                </div>
-              )}
-              {!collapsed && (
-                <div>
-                  <div className="text-sm font-medium text-foreground">
-                    {user.name || user.email.split('@')[0]}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{user.email}</div>
-                </div>
-              )}
-            </div>
-          ) : (
-            !collapsed && <div className="text-sm text-foreground">Not logged in</div>
-          )}
-        </div>
-      </div>
     </aside>
   );
 }

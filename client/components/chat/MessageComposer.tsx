@@ -217,7 +217,7 @@ export default function MessageComposer({
                 allowScheduleOpen.current = false;
               }}
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4 text-white" />
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-64">
