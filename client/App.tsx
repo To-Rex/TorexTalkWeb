@@ -6,27 +6,29 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import AppDashboard from "./pages/AppDashboard";
-import AdminPanel from "./pages/AdminPanel";
-import AutoReplies from "./pages/AutoReplies";
-import SettingsPage from "./pages/SettingsPage";
 import MainLayout from "./layouts/MainLayout";
 import { I18nProvider } from "./i18n";
 import { AuthProvider } from "@/auth";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
 import { RequireAuth, RequireAdmin } from "@/components/ProtectedRoute";
-import Features from "./pages/Features";
-import Pricing from "./pages/Pricing";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Security from "./pages/Security";
-import Help from "./pages/Help";
-import Partners from "./pages/Partners";
-import Contact from "./pages/Contact";
+
+// Lazy load all non-critical pages
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AppDashboard = lazy(() => import("./pages/AppDashboard"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const AutoReplies = lazy(() => import("./pages/AutoReplies"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Features = lazy(() => import("./pages/Features"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Security = lazy(() => import("./pages/Security"));
+const Help = lazy(() => import("./pages/Help"));
+const Partners = lazy(() => import("./pages/Partners"));
+const Contact = lazy(() => import("./pages/Contact"));
 
 const queryClient = new QueryClient();
 
@@ -48,52 +50,54 @@ const App = () => (
           <BrowserRouter>
             <ScrollToTop />
             <MainLayout>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/features" element={<Features />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route
-                  path="/app"
-                  element={
-                    <RequireAuth>
-                      <AppDashboard />
-                    </RequireAuth>
-                  }
-                />
-                <Route
-                  path="/auto-replies"
-                  element={
-                    <RequireAuth>
-                      <AutoReplies />
-                    </RequireAuth>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <RequireAuth>
-                      <SettingsPage />
-                    </RequireAuth>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <RequireAdmin>
-                      <AdminPanel />
-                    </RequireAdmin>
-                  }
-                />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/security" element={<Security />} />
-                <Route path="/help" element={<Help />} />
-                <Route path="/partners" element={<Partners />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/features" element={<Features />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route
+                    path="/app"
+                    element={
+                      <RequireAuth>
+                        <AppDashboard />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/auto-replies"
+                    element={
+                      <RequireAuth>
+                        <AutoReplies />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <RequireAuth>
+                        <SettingsPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <RequireAdmin>
+                        <AdminPanel />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/security" element={<Security />} />
+                  <Route path="/help" element={<Help />} />
+                  <Route path="/partners" element={<Partners />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </MainLayout>
           </BrowserRouter>
         </AuthProvider>

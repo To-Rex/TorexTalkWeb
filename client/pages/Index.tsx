@@ -5,9 +5,11 @@ import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Footer from "@/components/layout/Footer";
+import { useAuth } from "@/auth";
 
 export default function Index() {
-  const { t } = useI18n();
+   const { t } = useI18n();
+   const { user } = useAuth();
 
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const mouseRef = useRef({ x: 50, y: 50 });
@@ -21,15 +23,18 @@ export default function Index() {
 
     const animate = () => {
       setMousePos(prev => ({
-        x: prev.x + (mouseRef.current.x - prev.x) * 0.1,
-        y: prev.y + (mouseRef.current.y - prev.y) * 0.1,
+        x: prev.x + (mouseRef.current.x - prev.x) * 0.05, // Slower easing for better performance
+        y: prev.y + (mouseRef.current.y - prev.y) * 0.05,
       }));
       requestAnimationFrame(animate);
     };
 
-    animate();
-
-    window.addEventListener('mousemove', handleMouseMove);
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReducedMotion) {
+      animate();
+      window.addEventListener('mousemove', handleMouseMove);
+    }
 
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
@@ -94,7 +99,7 @@ export default function Index() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link to="/app">
                   <Button size="lg" className="shadow-lg shadow-cyan-500/20 text-white">
-                    {t("cta_primary")}
+                    {user ? t("dashboard") : t("cta_primary")}
                   </Button>
                 </Link>
               </motion.div>
@@ -215,24 +220,42 @@ export default function Index() {
           {t("quick_features")}
         </h2>
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="rounded-xl border p-6 bg-card">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="rounded-xl border p-6 bg-card"
+          >
             <h3 className="font-semibold mb-2">{t("feature_mass_messaging_title")}</h3>
             <p className="text-sm text-muted-foreground">
               {t("feature_mass_messaging_desc")}
             </p>
-          </div>
-          <div className="rounded-xl border p-6 bg-card">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="rounded-xl border p-6 bg-card"
+          >
             <h3 className="font-semibold mb-2">{t("feature_ai_replies_title")}</h3>
             <p className="text-sm text-muted-foreground">
               {t("feature_ai_replies_desc")}
             </p>
-          </div>
-          <div className="rounded-xl border p-6 bg-card">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="rounded-xl border p-6 bg-card"
+          >
             <h3 className="font-semibold mb-2">{t("feature_analytics_title")}</h3>
             <p className="text-sm text-muted-foreground">
               {t("feature_analytics_desc")}
             </p>
-          </div>
+          </motion.div>
         </div>
       </motion.section>
 
@@ -245,28 +268,46 @@ export default function Index() {
       >
         <h2 className="text-2xl sm:text-3xl font-bold mb-6">{t("how_it_works")}</h2>
         <div className="grid md:grid-cols-3 gap-6">
-           <div className="rounded-xl border p-6 bg-card">
-             <div className="text-3xl font-extrabold mb-2">1</div>
-             <h4 className="font-semibold mb-2">{t("step1_title")}</h4>
-             <p className="text-sm text-muted-foreground">
-               {t("step1_desc")}
-             </p>
-           </div>
-           <div className="rounded-xl border p-6 bg-card">
-             <div className="text-3xl font-extrabold mb-2">2</div>
-             <h4 className="font-semibold mb-2">{t("step2_title")}</h4>
-             <p className="text-sm text-muted-foreground">
-               {t("step2_desc")}
-             </p>
-           </div>
-           <div className="rounded-xl border p-6 bg-card">
-             <div className="text-3xl font-extrabold mb-2">3</div>
-             <h4 className="font-semibold mb-2">{t("step3_title")}</h4>
-             <p className="text-sm text-muted-foreground">
-               {t("step3_desc")}
-             </p>
-           </div>
-         </div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="rounded-xl border p-6 bg-card"
+          >
+            <div className="text-3xl font-extrabold mb-2">1</div>
+            <h4 className="font-semibold mb-2">{t("step1_title")}</h4>
+            <p className="text-sm text-muted-foreground">
+              {t("step1_desc")}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="rounded-xl border p-6 bg-card"
+          >
+            <div className="text-3xl font-extrabold mb-2">2</div>
+            <h4 className="font-semibold mb-2">{t("step2_title")}</h4>
+            <p className="text-sm text-muted-foreground">
+              {t("step2_desc")}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="rounded-xl border p-6 bg-card"
+          >
+            <div className="text-3xl font-extrabold mb-2">3</div>
+            <h4 className="font-semibold mb-2">{t("step3_title")}</h4>
+            <p className="text-sm text-muted-foreground">
+              {t("step3_desc")}
+            </p>
+          </motion.div>
+        </div>
       </motion.section>
 
       {/* Integrations & CTA */}
@@ -309,15 +350,33 @@ export default function Index() {
           {t("testimonials_title")}
         </h2>
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="rounded-xl border p-6 bg-card">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="rounded-xl border p-6 bg-card"
+          >
             {t("testimonial1")}
-          </div>
-          <div className="rounded-xl border p-6 bg-card">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="rounded-xl border p-6 bg-card"
+          >
             {t("testimonial2")}
-          </div>
-          <div className="rounded-xl border p-6 bg-card">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="rounded-xl border p-6 bg-card"
+          >
             {t("testimonial3")}
-          </div>
+          </motion.div>
         </div>
       </motion.section>
 
