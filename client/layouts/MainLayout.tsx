@@ -2,6 +2,7 @@ import AppHeader from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import NavMenu from "@/components/layout/NavMenu";
 import { useAuth } from "@/auth";
+import { useSidebar } from "@/contexts/SidebarContext";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 
@@ -11,6 +12,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const { user } = useAuth();
+  const { collapsed: sidebarCollapsed } = useSidebar();
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   // Hide sidebar on landing and certain public pages
@@ -34,11 +36,11 @@ export default function MainLayout({
         showMobileNavButton={showSidebar}
       />
       {showSidebar ? (
-        <div className="fixed top-14 left-0 h-screen z-40 hidden md:block">
+        <div className="fixed top-14 left-0 h-[calc(100vh-3.5rem)] z-40 hidden md:block">
           <NavMenu />
         </div>
       ) : null}
-      <main className={`${showSidebar ? "md:ml-64 lg:ml-72" : ""} pt-16 h-screen overflow-x-hidden overflow-y-auto`}>
+      <main className={`${showSidebar ? (sidebarCollapsed ? "md:ml-20" : "md:ml-64 lg:ml-72") : ""} pt-16 h-screen overflow-x-hidden overflow-y-auto transition-all duration-200`}>
         {children}
       </main>
 

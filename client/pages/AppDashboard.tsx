@@ -26,6 +26,19 @@ export default function AppDashboard() {
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("tt_chat_sidebar_collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("tt_chat_sidebar_collapsed", sidebarCollapsed ? "1" : "0");
+    } catch {}
+  }, [sidebarCollapsed]);
 
   const [chats, setChats] = useState<ChatItem[]>([
     { id: "1", name: "Ali", type: "private", unread: 1, avatar: "/placeholder.svg" },
@@ -159,7 +172,7 @@ export default function AppDashboard() {
   };
 
   return (
-    <div className="container py-6">
+    <div className="py-6 px-6">
       <div className="mb-3 flex items-center justify-between">
         <div className="hidden md:flex items-center gap-3">
           <button
@@ -215,15 +228,17 @@ export default function AppDashboard() {
         </div>
       </div>
       {!isMobile ? (
-        <div className="grid gap-3 rounded-xl border overflow-hidden h-[70vh] grid-cols-1 md:grid-cols-[1fr_2fr] lg:grid-cols-[1fr_3fr]">
+        <div className="flex gap-3 rounded-xl border overflow-hidden h-[70vh]">
           <ChatSidebar
             chats={chats}
             currentId={currentId}
             onSelect={setCurrentId}
             onCreateChat={onCreateChat}
             user={user}
+            collapsed={sidebarCollapsed}
+            onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
           />
-          <div className="flex flex-col h-full min-h-0">
+          <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 min-h-0">
               <ChatWindow
                 title={currentName}

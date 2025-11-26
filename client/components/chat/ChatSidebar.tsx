@@ -9,7 +9,7 @@ export interface ChatItem {
 }
 
 import { Input } from "@/components/ui/input";
-import { X, Search } from "lucide-react";
+import { X, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { User } from "@/auth";
 
 export default function ChatSidebar({
@@ -18,12 +18,16 @@ export default function ChatSidebar({
   onSelect,
   onCreateChat,
   user,
+  collapsed = false,
+  onToggleCollapsed,
 }: {
   chats: ChatItem[];
   currentId: string | null;
   onSelect: (id: string) => void;
   onCreateChat?: (payload: { name: string; type: "private" | "group" }) => void;
   user: User | null;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }) {
   const [tab, setTab] = useState<"private" | "group">("private");
   const [query, setQuery] = useState("");
@@ -50,42 +54,58 @@ export default function ChatSidebar({
     : [];
 
   return (
-    <aside className="w-full md:w-64 lg:w-72 border-r bg-secondary/30 flex flex-col h-full min-h-0">
-      <div className="p-3 flex gap-2 shrink-0">
-        <button
-          onClick={() => setTab("private")}
-          className={`flex-1 px-3 py-2 rounded-md text-sm ${tab === "private" ? "bg-background" : "hover:bg-background/50"}`}
-        >
-          Private
-        </button>
-        <button
-          onClick={() => setTab("group")}
-          className={`flex-1 px-3 py-2 rounded-md text-sm ${tab === "group" ? "bg-background" : "hover:bg-background/50"}`}
-        >
-          Groups
-        </button>
-      </div>
-
-      <div className="px-3 pb-2 shrink-0">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={tab === "private" ? "Foydalanuvchi qidirish" : "Guruh qidirish"}
-            className="pl-8 pr-8"
-          />
-          {query ? (
-            <button
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              onClick={() => setQuery("")}
-              aria-label="Tozalash"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
+    <aside className={`${collapsed ? "w-16" : "w-full md:w-64 lg:w-72"} border-r bg-secondary/30 flex flex-col h-full min-h-0 transition-all duration-200`}>
+      {onToggleCollapsed && (
+        <div className="flex justify-end p-2 shrink-0">
+          <button
+            onClick={onToggleCollapsed}
+            className="inline-flex items-center justify-center rounded-md p-2 text-sm hover:bg-background"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Kengaytirish" : "Qisqartirish"}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
         </div>
-      </div>
+      )}
+      {!collapsed && (
+        <div className="p-3 flex gap-2 shrink-0">
+          <button
+            onClick={() => setTab("private")}
+            className={`flex-1 px-3 py-2 rounded-md text-sm ${tab === "private" ? "bg-background" : "hover:bg-background/50"}`}
+          >
+            Private
+          </button>
+          <button
+            onClick={() => setTab("group")}
+            className={`flex-1 px-3 py-2 rounded-md text-sm ${tab === "group" ? "bg-background" : "hover:bg-background/50"}`}
+          >
+            Groups
+          </button>
+        </div>
+      )}
+
+      {!collapsed && (
+        <div className="px-3 pb-2 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tab === "private" ? "Foydalanuvchi qidirish" : "Guruh qidirish"}
+              className="pl-8 pr-8"
+            />
+            {query ? (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setQuery("")}
+                aria-label="Tozalash"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       <div className="p-2 space-y-1 flex-1 min-h-0 overflow-y-auto">
         {filtered.map((c) => (
@@ -98,7 +118,7 @@ export default function ChatSidebar({
                 : "hover:bg-background/60"
             }`}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
               {c.avatar ? (
                 <img
                   src={c.avatar}
@@ -114,7 +134,7 @@ export default function ChatSidebar({
                     .join("")}
                 </div>
               )}
-              <div className="text-sm">{c.name}</div>
+              {!collapsed && <div className="text-sm">{c.name}</div>}
             </div>
             {c.unread ? (
               <span className="text-[10px] rounded bg-primary text-primary-foreground px-1.5 py-0.5">
@@ -124,7 +144,7 @@ export default function ChatSidebar({
           </button>
         ))}
 
-        {dirResults.length > 0 ? (
+        {!collapsed && dirResults.length > 0 ? (
           <div className="pt-2">
             <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
               Natijalar
@@ -147,9 +167,33 @@ export default function ChatSidebar({
       </div>
 
       <div className="mt-auto pt-2 border-t shrink-0">
-        <div className="text-xs text-muted-foreground mb-2 px-2">Account</div>
-        <div className="px-2">
-          <div className="text-sm text-foreground">{user?.email}</div>
+        {!collapsed && <div className="text-xs text-muted-foreground mb-2 px-2">Account</div>}
+        <div className={`px-2 ${collapsed ? "flex justify-center" : ""}`}>
+          {user ? (
+            <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt="Avatar"
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold text-xs">
+                  {(user.name || user.email.split('@')[0]).charAt(0).toUpperCase()}
+                </div>
+              )}
+              {!collapsed && (
+                <div>
+                  <div className="text-sm font-medium text-foreground">
+                    {user.name || user.email.split('@')[0]}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{user.email}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            !collapsed && <div className="text-sm text-foreground">Not logged in</div>
+          )}
         </div>
       </div>
     </aside>

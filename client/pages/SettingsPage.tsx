@@ -34,7 +34,7 @@ export default function SettingsPage() {
   }, [user]);
 
   if (!user)
-    return <div className="container py-10">Iltimos tizimga kiring</div>;
+    return <div className="py-10 px-6">Iltimos tizimga kiring</div>;
 
   const toggle = (k: "aiForGroups" | "aiForPrivate") => {
     updateUser((u) => ({
@@ -57,7 +57,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container py-8">
+    <div className="py-8 px-6">
       <h2 className="text-2xl font-semibold mb-4">Sozlamalar</h2>
 
       <div className="grid md:grid-cols-2 gap-4">

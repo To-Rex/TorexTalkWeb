@@ -16,6 +16,8 @@ export interface TelegramAccount {
 export interface User {
   email: string;
   password: string;
+  name?: string;
+  avatar?: string;
   isAdmin?: boolean;
   accounts: TelegramAccount[];
   activeAccountId?: string | null;
@@ -97,13 +99,19 @@ function saveUsers(users: User[]) {
 
 function mapSupabaseUserToUser(supabaseUser: SupabaseUser): User {
   const email = supabaseUser.email || '';
+  const name = supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || '';
+  const avatar = supabaseUser.user_metadata?.picture || supabaseUser.user_metadata?.avatar_url || '';
   // Try to load existing user data from localStorage
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const storedUser = JSON.parse(raw) as User;
       if (storedUser.email === email) {
-        return storedUser;
+        return {
+          ...storedUser,
+          name: name || storedUser.name,
+          avatar: avatar || storedUser.avatar,
+        };
       }
     }
   } catch (e) {
@@ -113,6 +121,8 @@ function mapSupabaseUserToUser(supabaseUser: SupabaseUser): User {
   return {
     email,
     password: '', // Don't store password
+    name,
+    avatar,
     isAdmin: supabaseUser.app_metadata?.role === 'admin' || false,
     accounts: [],
     activeAccountId: null,

@@ -123,7 +123,7 @@ export default function AutoReplies() {
   };
 
   if (!user)
-    return <div className="container py-10">Iltimos tizimga kiring</div>;
+    return <div className="py-10 px-6">Iltimos tizimga kiring</div>;
 
   function EditableText({
     value,
@@ -222,7 +222,7 @@ export default function AutoReplies() {
   }
 
   return (
-    <div className="container py-8">
+    <div className="py-8 px-6">
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <h2 className="text-2xl font-semibold mb-4">AI Avtojavoblar</h2>

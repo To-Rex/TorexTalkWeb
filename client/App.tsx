@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import MainLayout from "./layouts/MainLayout";
 import { I18nProvider } from "./i18n";
 import { AuthProvider } from "@/auth";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import { RequireAuth, RequireAdmin } from "@/components/ProtectedRoute";
 
 // Lazy load all non-critical pages
@@ -47,7 +48,8 @@ const App = () => (
       <Sonner />
       <I18nProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <SidebarProvider>
+            <BrowserRouter>
             <ScrollToTop />
             <MainLayout>
               <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
@@ -99,7 +101,8 @@ const App = () => (
                 </Routes>
               </Suspense>
             </MainLayout>
-          </BrowserRouter>
+            </BrowserRouter>
+          </SidebarProvider>
         </AuthProvider>
       </I18nProvider>
     </TooltipProvider>
