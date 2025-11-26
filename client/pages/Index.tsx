@@ -3,10 +3,36 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import Footer from "@/components/layout/Footer";
 
 export default function Index() {
   const { t } = useI18n();
+
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const mouseRef = useRef({ x: 50, y: 50 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = document.body.getBoundingClientRect();
+      mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 100;
+      mouseRef.current.y = ((e.clientY - rect.top) / rect.height) * 100;
+    };
+
+    const animate = () => {
+      setMousePos(prev => ({
+        x: prev.x + (mouseRef.current.x - prev.x) * 0.05,
+        y: prev.y + (mouseRef.current.y - prev.y) * 0.05,
+      }));
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const [selectedChat, setSelectedChat] = useState('Ali');
 
@@ -39,7 +65,12 @@ export default function Index() {
   const [inputValue, setInputValue] = useState('');
 
   return (
-    <div className="bg-gradient-to-b from-background to-secondary/20">
+    <div
+      className="bg-gradient-to-b from-background to-secondary/20"
+      style={{
+        background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, hsl(var(--primary) / 0.1) 0%, transparent 50%), radial-gradient(circle at ${mousePos.x + 30}% ${mousePos.y - 30}%, hsl(var(--accent) / 0.1) 0%, transparent 50%), radial-gradient(circle at ${mousePos.x - 30}% ${mousePos.y + 30}%, hsl(var(--secondary) / 0.1) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%)`
+      }}
+    >
       {/* Hero */}
       <section className="container py-10 sm:py-16 lg:py-24 min-h-[calc(100vh-3.5rem)] flex items-center">
         <div className="grid lg:grid-cols-2 gap-10 items-center">
@@ -84,7 +115,7 @@ export default function Index() {
             className="relative"
           >
             <div className="absolute -inset-6 bg-primary/20 blur-3xl rounded-3xl" />
-            <div className="relative rounded-2xl border bg-card/60 backdrop-blur p-4">
+            <div className="relative rounded-2xl border bg-card/60 backdrop-blur p-4 animate-bg-pulse">
               {/* Mocked Chat Preview */}
               <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
                 <div className="sm:col-span-2 rounded-xl bg-secondary p-3 space-y-2">
@@ -289,6 +320,8 @@ export default function Index() {
           </div>
         </div>
       </motion.section>
+
+      <Footer />
     </div>
   );
 }

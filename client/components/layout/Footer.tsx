@@ -5,8 +5,7 @@ export default function Footer() {
   const { t } = useI18n();
   const year = new Date().getFullYear();
   return (
-    <footer className="border-t bg-background/50 relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-gradient-to-b from-primary/15 to-transparent blur-2xl" />
+    <footer className="relative overflow-hidden border-t">
       <div className="container py-8 sm:py-12 text-sm text-muted-foreground grid gap-8 sm:gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start">
         <div>
           <div className="flex items-center gap-2">

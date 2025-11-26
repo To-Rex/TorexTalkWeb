@@ -117,3 +117,41 @@
 html {
   scrollbar-width: none;
 }
+
+/* Animated mesh gradient background */
+@keyframes meshGradient {
+  0% {
+    background: radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, hsl(var(--accent) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%);
+  }
+  25% {
+    background: radial-gradient(circle at 35% 35%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 65% 35%, hsl(var(--accent) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 65%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%);
+  }
+  50% {
+    background: radial-gradient(circle at 50% 20%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, hsl(var(--accent) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%);
+  }
+  75% {
+    background: radial-gradient(circle at 65% 65%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 35% 65%, hsl(var(--accent) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 35%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%);
+  }
+  100% {
+    background: radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, hsl(var(--accent) / 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%);
+  }
+}
+
+.animate-mesh {
+  animation: meshGradient 20s linear infinite;
+}
