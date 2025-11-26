@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { createClient, Session, User as SupabaseUser } from "@supabase/supabase-js";
 
 export interface TelegramAccount {
   id: string;
@@ -50,6 +51,11 @@ const Ctx = createContext<AuthCtx | null>(null);
 const STORAGE_KEY = "tt_auth_user";
 const USERS_KEY = "tt_users";
 
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
 function loadUsers(): User[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
@@ -89,55 +95,89 @@ function saveUsers(users: User[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw) as User;
-    } catch (e) {
-      return null;
+function mapSupabaseUserToUser(supabaseUser: SupabaseUser): User {
+  const email = supabaseUser.email || '';
+  // Try to load existing user data from localStorage
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const storedUser = JSON.parse(raw) as User;
+      if (storedUser.email === email) {
+        return storedUser;
+      }
     }
-  });
+  } catch (e) {
+    // Ignore
+  }
+  // Default new user
+  return {
+    email,
+    password: '', // Don't store password
+    isAdmin: supabaseUser.app_metadata?.role === 'admin' || false,
+    accounts: [],
+    activeAccountId: null,
+    settings: { aiForGroups: false, aiForPrivate: false },
+    blocklist: [],
+  };
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!localStorage.getItem(USERS_KEY)) loadUsers();
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(mapSupabaseUserToUser(session.user));
+      }
+      setLoading(false);
+    };
+    getInitialSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session?.user) {
+          setUser(mapSupabaseUserToUser(session.user));
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    const users = loadUsers();
-    const found = users.find(
-      (u) => u.email === email && u.password === password,
-    );
-    if (found) {
-      setUser(found);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(found));
-      return true;
-    }
-    return false;
-  };
-
-  const register = async (email: string, password: string) => {
-    const users = loadUsers();
-    if (users.find((u) => u.email === email)) return false;
-    const newUser: User = {
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
-      isAdmin: false,
-      accounts: [],
-      activeAccountId: null,
-      settings: { aiForGroups: false, aiForPrivate: false },
-    };
-    users.push(newUser);
-    saveUsers(users);
-    setUser(newUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+    });
+    if (error) {
+      console.error('Login error:', error.message);
+      return false;
+    }
+    // User will be set via onAuthStateChange
     return true;
   };
 
-  const logout = () => {
+  const register = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) {
+      console.error('Register error:', error.message);
+      return false;
+    }
+    // User will be set via onAuthStateChange if confirmed
+    return true;
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
   };
 
   const addAccount = (acc: TelegramAccount) => {
@@ -171,52 +211,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updated = fn(user);
     setUser(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    const users = loadUsers().map((u) =>
-      u.email === updated.email ? updated : u,
-    );
-    saveUsers(users);
   };
 
   const oauthSignIn = async (
     provider: "google" | "github" | "facebook" | "apple",
     profile?: { email?: string; name?: string },
   ) => {
-    const users = loadUsers();
-    const defaultEmail = `${provider}_demo@torex.com`;
-    const email = profile?.email ?? defaultEmail;
-    let found = users.find((u) => u.email === email);
-    if (!found) {
-      const prefix =
-        provider === "google"
-          ? "g"
-          : provider === "github"
-            ? "gh"
-            : provider === "facebook"
-              ? "fb"
-              : "ap";
-      const newUser: User = {
-        email,
-        password: "",
-        isAdmin: false,
-        accounts: [
-          {
-            id: `${prefix}_${Math.random().toString(36).slice(2)}`,
-            name: profile?.name
-              ? profile.name
-              : `${provider[0].toUpperCase()}${provider.slice(1)} User`,
-            phone: undefined,
-          },
-        ],
-        activeAccountId: undefined,
-        settings: { aiForGroups: true, aiForPrivate: true },
-        blocklist: [],
-      };
-      users.push(newUser);
-      saveUsers(users);
-      found = newUser;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}`,
+      },
+    });
+    if (error) {
+      console.error('OAuth error:', error.message);
+      return false;
     }
-    setUser(found);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(found));
+    // User will be set via onAuthStateChange
     return true;
   };
 
