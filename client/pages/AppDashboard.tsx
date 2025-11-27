@@ -668,15 +668,33 @@ export default function AppDashboard() {
         <div className="hidden md:flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="inline-flex flex-col text-sm text-left hover:opacity-90">
-                <div className="text-muted-foreground text-xs flex items-center gap-1">
-                  Hozirgi hisob <ChevronDown className="h-3 w-3" />
+              <button className="inline-flex items-center gap-2 text-sm text-left hover:opacity-90">
+                {activeTelegramAccount?.profile_picture ? (
+                  <img
+                    src={activeTelegramAccount.profile_picture}
+                    alt={activeTelegramAccount.name}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary text-white grid place-items-center font-semibold text-xs">
+                    {activeTelegramAccount?.name
+                      .split(" ")
+                      .map((s) => s[0])
+                      .slice(0, 2)
+                      .join("")}
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <div className="font-medium">
+                    {activeTelegramAccount?.name || "— hisob tanlanmagan —"}
+                  </div>
+                  {activeTelegramAccount?.phone && (
+                    <div className="text-xs text-muted-foreground">
+                      +{activeTelegramAccount.phone.slice(0, 3)} {activeTelegramAccount.phone.slice(3, 5)} {activeTelegramAccount.phone.slice(5, 8)} {activeTelegramAccount.phone.slice(8, 10)} {activeTelegramAccount.phone.slice(10)}
+                    </div>
+                  )}
                 </div>
-                <div className="font-medium">
-                  {activeTelegramAccount
-                    ? `${activeTelegramAccount.name} ${activeTelegramAccount.phone ? `(${activeTelegramAccount.phone})` : ""}`
-                    : "— hisob tanlanmagan —"}
-                </div>
+                <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -684,9 +702,33 @@ export default function AppDashboard() {
                 <DropdownMenuItem
                   key={acc.id}
                   onClick={() => switchTelegramAccount(acc.id)}
-                  className={acc.id === user.activeTelegramAccountId ? "bg-accent" : ""}
+                  className={`flex items-center gap-2 ${acc.id === user.activeTelegramAccountId ? "bg-accent" : ""}`}
                 >
-                  {acc.name} {acc.phone ? `(${acc.phone})` : ""}
+                  {acc.profile_picture ? (
+                    <img
+                      src={acc.profile_picture}
+                      alt={acc.name}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-primary text-white grid place-items-center font-semibold text-xs">
+                      {acc.name
+                        .split(" ")
+                        .map((s) => s[0])
+                        .slice(0, 2)
+                        .join("")}
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <div className="font-medium">
+                      {acc.name}
+                    </div>
+                    {acc.phone && (
+                      <div className="text-xs">
+                        +{acc.phone.slice(0, 3)} {acc.phone.slice(3, 5)} {acc.phone.slice(5, 8)} {acc.phone.slice(8, 10)} {acc.phone.slice(10)}
+                      </div>
+                    )}
+                  </div>
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />

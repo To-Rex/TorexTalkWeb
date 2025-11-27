@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { Check, Sparkles, X } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   Accordion,
@@ -90,7 +90,7 @@ function PlanCard({ plan, period, highlight, selected, onSelect }: { plan: Plan;
       </motion.div>
 
       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-auto">
-        <Button className="w-full" onClick={(e) => { e.stopPropagation(); onSelect(); }}>{plan.cta}</Button>
+        <Button className="w-full text-white" onClick={(e) => { e.stopPropagation(); onSelect(); }}>{plan.cta}</Button>
       </motion.div>
 
       {/* constant pulsing glow (non-cursor) */}
@@ -118,8 +118,35 @@ function PlanCard({ plan, period, highlight, selected, onSelect }: { plan: Plan;
 
 export default function Pricing() {
   const { t } = useI18n();
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const mouseRef = useRef({ x: 50, y: 50 });
   const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
   const [selected, setSelected] = useState<string>("plus");
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = document.body.getBoundingClientRect();
+      mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 100;
+      mouseRef.current.y = ((e.clientY - rect.top) / rect.height) * 100;
+    };
+
+    const animate = () => {
+      setMousePos(prev => ({
+        x: prev.x + (mouseRef.current.x - prev.x) * 0.05, // Slower easing for better performance
+        y: prev.y + (mouseRef.current.y - prev.y) * 0.05,
+      }));
+      requestAnimationFrame(animate);
+    };
+
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReducedMotion) {
+      animate();
+      window.addEventListener('mousemove', handleMouseMove);
+    }
+
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const plans: Plan[] = useMemo(
     () => [
@@ -174,7 +201,13 @@ export default function Pricing() {
   ] as const;
 
   return (
-    <section className="container py-10 sm:py-14 relative">
+    <div
+      className="bg-gradient-to-b from-background to-secondary/20"
+      style={{
+        background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, hsl(var(--primary) / 0.1) 0%, transparent 50%), radial-gradient(circle at ${mousePos.x + 30}% ${mousePos.y - 30}%, hsl(var(--accent) / 0.1) 0%, transparent 50%), radial-gradient(circle at ${mousePos.x - 30}% ${mousePos.y + 30}%, hsl(var(--secondary) / 0.1) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%)`
+      }}
+    >
+      <section className="container py-10 sm:py-14 relative">
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-40 bg-gradient-to-b from-primary/15 to-transparent blur-2xl"
@@ -335,7 +368,7 @@ export default function Pricing() {
           <div className="mt-2 text-xs text-muted-foreground">{t("payment_methods")}: {t("payment_list")}</div>
         </div>
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-          <Button>{t("contact_cta")}</Button>
+          <Button className="text-white">{t("contact_cta")}</Button>
         </motion.div>
       </motion.div>
 
@@ -371,6 +404,7 @@ export default function Pricing() {
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
       />
-    </section>
+      </section>
+    </div>
   );
 }

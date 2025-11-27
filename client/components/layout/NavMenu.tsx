@@ -17,24 +17,24 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
   return (
     <aside className={`${collapsed ? "w-20" : asideWidth} ${asideHeight} bg-sidebar px-4 py-3 border-r flex flex-col overflow-hidden relative transition-all duration-200`}>
       {!isOverlay ? (
-        <div className="flex justify-between items-center">
+        <div className={`flex ${collapsed ? 'justify-center' : 'justify-between'} items-center`}>
           {!collapsed && (
-            <div className="text-sm font-medium text-muted-foreground">
+            <div className="text-sm font-medium px-3">
               Navigation
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="inline-flex items-center justify-center rounded-md p-2 text-sm hover:bg-background"
+            className={`inline-flex items-center justify-center rounded-md ${collapsed ? 'p-3' : 'p-2'} text-sm hover:bg-background`}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Kengaytirish" : "Qisqartirish"}
           >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         </div>
       ) : null}
 
-      <nav className="flex flex-col gap-2 overflow-y-auto pb-20">
+      <nav className="flex flex-col gap-2 overflow-y-auto pb-20 mt-4">
         <Link
           to="/app"
           className={`flex items-center ${itemLayout} px-3 py-2 rounded-md ${
@@ -79,8 +79,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
       </nav>
 
       <div className="absolute bottom-0 left-0 right-0 pt-2 pb-3 border-t">
-        {!collapsed && <div className="text-xs text-muted-foreground mb-2 px-2">Account</div>}
-        <div className={`px-2 ${collapsed ? 'flex justify-center' : ''}`}>
+        <div className={`px-3 ${collapsed ? 'flex justify-center' : ''}`}>
           {user ? (
             <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
               {user.avatar ? (
@@ -95,13 +94,14 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
                 </div>
               )}
               {!collapsed && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center w-full">
                   <div>
                     <div className="text-sm font-medium text-foreground">
                       {user.name || user.email.split('@')[0]}
                     </div>
                     <div className="text-xs text-muted-foreground">{user.settings?.plan ?? "Free"}</div>
                   </div>
+                  <div className="flex-1"></div>
                   {(user.settings?.plan ?? "Free") === "Free" && (
                     <Link to="/pricing" className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary/90">
                       Upgrade

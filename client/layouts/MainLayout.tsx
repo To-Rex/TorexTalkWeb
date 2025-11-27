@@ -64,6 +64,8 @@ export default function MainLayout({
           </div>
         </div>
       ) : null}
+
+      {!hideFooter && <Footer />}
     </div>
   );
 }
