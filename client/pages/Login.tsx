@@ -22,7 +22,7 @@ const fade = {
 
 export default function Login() {
    const { t } = useI18n();
-   const { login, oauthSignIn } = useAuth();
+   const { user, login, oauthSignIn } = useAuth();
    const navigate = useNavigate();
    const [email, setEmail] = useState("");
    const [password, setPassword] = useState("");
@@ -30,6 +30,7 @@ export default function Login() {
    const [accepted, setAccepted] = useState(false);
    const [showPassword, setShowPassword] = useState(false);
    const [submitting, setSubmitting] = useState(false);
+   const [hasChecked, setHasChecked] = useState(false);
 
    const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
    const mouseRef = useRef({ x: 50, y: 50 });
@@ -58,6 +59,14 @@ export default function Login() {
 
      return () => window.removeEventListener('mousemove', handleMouseMove);
    }, []);
+
+   useEffect(() => {
+     if (user) {
+       navigate("/app");
+     } else {
+       setHasChecked(true);
+     }
+   }, [user, navigate]);
 
   const validate = () => {
     if (!accepted) {
@@ -102,6 +111,17 @@ export default function Login() {
     setSubmitting(false);
     navigate("/app");
   };
+
+  if (!hasChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Tekshirilmoqda...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

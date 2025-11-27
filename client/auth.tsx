@@ -71,8 +71,8 @@ function loadUsers(): User[] {
     if (!raw) {
       const defaults: User[] = [
         {
-          email: "admin@torex.com",
-          password: "adminpass",
+          email: "torex.amaki@gmail.com",
+          password: "admin123",
           isAdmin: true,
           accounts: [],
           telegramAccounts: [],
