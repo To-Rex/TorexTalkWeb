@@ -90,7 +90,7 @@ export default function NavMenu({ variant = "desktop" }: { variant?: "desktop" |
                   className="h-8 w-8 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold text-xs">
+                <div className="h-8 w-8 rounded-full bg-primary text-white grid place-items-center font-semibold text-xs">
                   {(user.name || user.email.split('@')[0]).charAt(0).toUpperCase()}
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/auth";
 import { useI18n } from "@/i18n";
@@ -21,15 +21,43 @@ const fade = {
 };
 
 export default function Login() {
-  const { t } = useI18n();
-  const { login, oauthSignIn } = useAuth();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [accepted, setAccepted] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+   const { t } = useI18n();
+   const { login, oauthSignIn } = useAuth();
+   const navigate = useNavigate();
+   const [email, setEmail] = useState("");
+   const [password, setPassword] = useState("");
+   const [error, setError] = useState<string | null>(null);
+   const [accepted, setAccepted] = useState(false);
+   const [showPassword, setShowPassword] = useState(false);
+   const [submitting, setSubmitting] = useState(false);
+
+   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+   const mouseRef = useRef({ x: 50, y: 50 });
+
+   useEffect(() => {
+     const handleMouseMove = (e: MouseEvent) => {
+       const rect = document.body.getBoundingClientRect();
+       mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 100;
+       mouseRef.current.y = ((e.clientY - rect.top) / rect.height) * 100;
+     };
+
+     const animate = () => {
+       setMousePos(prev => ({
+         x: prev.x + (mouseRef.current.x - prev.x) * 0.05, // Slower easing for better performance
+         y: prev.y + (mouseRef.current.y - prev.y) * 0.05,
+       }));
+       requestAnimationFrame(animate);
+     };
+
+     // Check for reduced motion preference
+     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+     if (!prefersReducedMotion) {
+       animate();
+       window.addEventListener('mousemove', handleMouseMove);
+     }
+
+     return () => window.removeEventListener('mousemove', handleMouseMove);
+   }, []);
 
   const validate = () => {
     if (!accepted) {
@@ -76,27 +104,13 @@ export default function Login() {
   };
 
   return (
-    <section className="relative">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.1),transparent_60%),radial-gradient(ellipse_at_bottom,hsl(var(--accent)/0.1),transparent_60%)]" />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute -top-10 -left-10 h-72 w-72 rounded-full bg-primary/20 blur-3xl"
-        animate={{ x: [0, 20, -10, 0], y: [0, -15, 10, 0], scale: [1, 1.05, 0.98, 1] }}
-        transition={{ duration: 14, ease: "easeInOut", repeat: Infinity }}
-      />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute bottom-10 -right-6 h-80 w-80 rounded-full bg-accent/20 blur-3xl"
-        animate={{ x: [0, -15, 10, 0], y: [0, 10, -12, 0], scale: [1, 0.97, 1.04, 1] }}
-        transition={{ duration: 16, ease: "easeInOut", repeat: Infinity }}
-      />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-secondary/30 blur-2xl"
-        animate={{ x: [0, 8, -6, 0], y: [0, -8, 6, 0], opacity: [0.6, 0.8, 0.7, 0.6] }}
-        transition={{ duration: 18, ease: "easeInOut", repeat: Infinity }}
-      />
-      <div className="container py-10 sm:py-16 relative">
+    <div
+      className="bg-gradient-to-b from-background to-secondary/20"
+      style={{
+        background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, hsl(var(--primary) / 0.1) 0%, transparent 50%), radial-gradient(circle at ${mousePos.x + 30}% ${mousePos.y - 30}%, hsl(var(--accent) / 0.1) 0%, transparent 50%), radial-gradient(circle at ${mousePos.x - 30}% ${mousePos.y + 30}%, hsl(var(--secondary) / 0.1) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.2) 100%)`
+      }}
+    >
+      <section className="container py-10 sm:py-16 min-h-[calc(100vh-3.5rem)] flex items-center">
         <motion.div
           initial="hidden"
           animate="show"
@@ -221,7 +235,7 @@ export default function Login() {
             </CardFooter>
           </Card>
         </motion.div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }

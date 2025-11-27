@@ -75,7 +75,7 @@ export default function Header({
           {!user ? (
             <>
               <Link to="/login">
-                <Button className="ml-2" size="sm">
+                <Button className="ml-2 text-white" size="sm">
                   {t("sign_in")}
                 </Button>
               </Link>
@@ -105,7 +105,7 @@ export default function Header({
                     className="h-6 w-6 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold text-xs">
+                  <div className="h-6 w-6 rounded-full bg-primary text-white grid place-items-center font-semibold text-xs">
                     {(user.name || user.email.split('@')[0]).charAt(0).toUpperCase()}
                   </div>
                 )}

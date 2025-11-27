@@ -250,13 +250,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await response.json();
       if (data.ok && data.telegram_accounts) {
-        const telegramAccounts: TelegramAccount[] = data.telegram_accounts.map((acc: any) => ({
-          id: acc.telegram_id.toString(),
-          name: acc.full_name,
-          phone: acc.phone_number,
-          username: acc.username,
-          telegram_id: acc.telegram_id,
-        }));
+        const telegramAccounts: TelegramAccount[] = data.telegram_accounts
+          .filter((acc: any) => !acc.invalid)
+          .map((acc: any) => ({
+            id: acc.telegram_id.toString(),
+            name: acc.full_name,
+            phone: acc.phone_number,
+            username: acc.username,
+            telegram_id: acc.telegram_id,
+          }));
         const updated = { ...user, telegramAccounts };
         if (!user.activeTelegramAccountId && telegramAccounts.length > 0) {
           updated.activeTelegramAccountId = telegramAccounts[0].id;

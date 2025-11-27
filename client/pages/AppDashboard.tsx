@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import ChatSidebar, { ChatItem } from "@/components/chat/ChatSidebar";
 import ChatWindow, { Message } from "@/components/chat/ChatWindow";
 import MessageComposer from "@/components/chat/MessageComposer";
-import OtpModal from "@/components/chat/OtpModal";
 import MassMessageModal from "@/components/chat/MassMessageModal";
+import AddAccountModal from "@/components/chat/AddAccountModal";
 import AccountsManager from "@/components/AccountsManager";
 import TemplatesManager from "@/components/TemplatesManager";
 import SettingsModal from "@/components/SettingsModal";
@@ -22,8 +22,8 @@ import { MoreVertical, ChevronDown } from "lucide-react";
 export default function AppDashboard() {
   const { user, switchTelegramAccount } = useAuth();
   const isMobile = useIsMobile();
-  const [otpOpen, setOtpOpen] = useState(false);
   const [massOpen, setMassOpen] = useState(false);
+  const [addAccountOpen, setAddAccountOpen] = useState(false);
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -695,7 +695,7 @@ export default function AppDashboard() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button size="sm" onClick={() => setOtpOpen(true)} className="text-white">
+          <Button size="sm" className="text-white" onClick={() => setAddAccountOpen(true)}>
             Hisob qo'shish
           </Button>
           <Button
@@ -725,7 +725,7 @@ export default function AppDashboard() {
             {activeTelegramAccount ? activeTelegramAccount.name : "Hisob yo'q"}
           </div>
           <MobileActions
-            onAdd={() => setOtpOpen(true)}
+            onAdd={() => {}}
             onMass={() => setMassOpen(true)}
             onTemplates={() => setTemplatesOpen(true)}
             onSettings={() => setSettingsOpen(true)}
@@ -786,7 +786,15 @@ export default function AppDashboard() {
           )}
         </div>
       )}
-      <OtpModal open={otpOpen} onClose={() => setOtpOpen(false)} />
+      <AddAccountModal
+        open={addAccountOpen}
+        onClose={() => setAddAccountOpen(false)}
+        onSuccess={(accountData) => {
+          // Handle successful account addition
+          console.log("Account added successfully:", accountData);
+          // You can add the account to the user's telegramAccounts here
+        }}
+      />
       <MassMessageModal
         open={massOpen}
         onClose={() => setMassOpen(false)}

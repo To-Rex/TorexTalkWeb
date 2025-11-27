@@ -127,7 +127,7 @@ export default function ChatSidebar({
                   className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full object-cover`}
                 />
               ) : (
-                <div className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold ${collapsed ? "text-xs" : ""}`}>
+                <div className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-primary text-white grid place-items-center font-semibold ${collapsed ? "text-xs" : ""}`}>
                   {c.name
                     .split(" ")
                     .map((s) => s[0])
