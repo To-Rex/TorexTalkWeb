@@ -9,31 +9,22 @@ export default function AccountsManager({
   open: boolean;
   onClose: () => void;
 }) {
-  const { user, switchAccount, updateUser } = useAuth();
-  const [confirm, setConfirm] = useState<string | null>(null);
+  const { user, switchTelegramAccount } = useAuth();
 
   if (!open) return null;
   if (!user) return null;
-
-  const remove = (id: string) => {
-    updateUser((u) => ({
-      ...u,
-      accounts: u.accounts.filter((a) => a.id !== id),
-      activeAccountId: u.activeAccountId === id ? null : u.activeAccountId,
-    }));
-  };
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-xl border bg-background p-5 shadow-xl">
         <h3 className="text-lg font-semibold mb-4">Telegram hisoblari</h3>
         <div className="space-y-2">
-          {user.accounts.length === 0 ? (
+          {user.telegramAccounts.length === 0 ? (
             <div className="text-sm text-muted-foreground">
-              Hisob topilmadi. "Hisob qo'shish" tugmasi orqali qo'shing.
+              Hisob topilmadi.
             </div>
           ) : (
-            user.accounts.map((a) => (
+            user.telegramAccounts.map((a) => (
               <div
                 key={a.id}
                 className="flex items-center justify-between border rounded p-2"
@@ -44,16 +35,10 @@ export default function AccountsManager({
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => switchAccount(a.id)}
+                    onClick={() => switchTelegramAccount(a.id)}
                     className="px-2 py-1 rounded bg-secondary text-sm"
                   >
                     Faollashtirish
-                  </button>
-                  <button
-                    onClick={() => remove(a.id)}
-                    className="px-2 py-1 rounded bg-destructive text-destructive-foreground text-sm"
-                  >
-                    O'chirish
                   </button>
                 </div>
               </div>
