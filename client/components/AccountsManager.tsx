@@ -29,9 +29,26 @@ export default function AccountsManager({
                 key={a.id}
                 className="flex items-center justify-between border rounded p-2"
               >
-                <div>
-                  <div className="font-medium">{a.name}</div>
-                  <div className="text-xs text-muted-foreground">{a.phone}</div>
+                <div className="flex items-center gap-3">
+                  {a.profile_picture ? (
+                    <img
+                      src={a.profile_picture}
+                      alt={a.name}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-primary text-white grid place-items-center font-semibold">
+                      {a.name
+                        .split(" ")
+                        .map((s) => s[0])
+                        .slice(0, 2)
+                        .join("")}
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-medium">{a.name}</div>
+                    <div className="text-xs text-muted-foreground">{a.phone}</div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button

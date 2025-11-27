@@ -13,6 +13,8 @@ export interface TelegramAccount {
   phone?: string;
   username?: string;
   telegram_id?: number;
+  profile_picture?: string;
+  profile_url?: string;
 }
 
 export interface User {
@@ -241,7 +243,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) return;
 
-      const response = await fetch('https://talkapp.up.railway.app/me/telegrams', {
+      const API_BASE_URL = 'https://talkapp.up.railway.app';
+      const response = await fetch(`${API_BASE_URL}/me/telegrams`, {
         headers: {
           'Authorization': `Bearer ${session.session.access_token}`,
         },
@@ -258,6 +261,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phone: acc.phone_number,
             username: acc.username,
             telegram_id: acc.telegram_id,
+            profile_picture: acc.profile_picture ? `${API_BASE_URL}${acc.profile_picture}` : undefined,
+            profile_url: acc.profile_url,
           }));
         const updated = { ...user, telegramAccounts };
         if (!user.activeTelegramAccountId && telegramAccounts.length > 0) {
