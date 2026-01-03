@@ -10,7 +10,7 @@ export interface ChatItem {
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Search, ChevronLeft, ChevronRight, UserX } from "lucide-react";
 import { User } from "@/auth";
 
 export default function ChatSidebar({
@@ -141,7 +141,11 @@ export default function ChatSidebar({
                 }`}
               >
                 <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
-                  {c.avatar ? (
+                  {c.avatar === "deleted" ? (
+                    <div className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-muted flex items-center justify-center`}>
+                      <UserX className={`${collapsed ? "h-4 w-4" : "h-5 w-5"} text-muted-foreground`} />
+                    </div>
+                  ) : c.avatar ? (
                     <img
                       src={c.avatar}
                       alt={c.name}

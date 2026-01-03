@@ -59,9 +59,9 @@ export default function AppDashboard() {
           const baseUrl = import.meta.env.VITE_API_BASE_URL;
           const privates: ChatItem[] = data.items.map(item => ({
             id: item.id.toString(),
-            name: item.full_name || item.username || "Unknown",
+            name: item.full_name || item.username || "Deleted Account",
             type: "private" as const,
-            avatar: item.has_photo ? `${baseUrl}${item.photo_url}` : undefined,
+            avatar: (!item.full_name && !item.username) ? "deleted" : item.has_photo ? `${baseUrl}${item.photo_url}` : undefined,
           }));
           setPrivateChats(privates);
         }
