@@ -63,6 +63,8 @@ export interface GroupChatItem {
   id: number;
   title: string;
   username: string | null;
+  member_count: number;
+  online_count: number;
   has_photo: boolean;
   photo_url: string;
 }
@@ -74,4 +76,46 @@ export interface GroupsResponse {
   ok: boolean;
   count: number;
   items: GroupChatItem[];
+}
+
+/**
+ * User in message
+ */
+export interface MessageUser {
+  id: number;
+  first_name: string;
+  last_name: string | null;
+  username: string | null;
+  phone_number: string | null;
+  photo_url: string | null;
+  status: string | null;
+  bio: string | null;
+}
+
+/**
+ * Message item
+ */
+export interface MessageItem {
+  id: number;
+  date: string;
+  chat_id: number;
+  chat_type: string;
+  from_user: MessageUser;
+  text: string | null;
+  caption: string | null;
+  media_type: string | null;
+  file_id: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  is_read: boolean;
+  is_outgoing: boolean | null;
+}
+
+/**
+ * Response type for /me/chats/:chat_id/messages
+ */
+export interface ChatMessagesResponse {
+  ok: boolean;
+  count: number;
+  messages: MessageItem[];
 }

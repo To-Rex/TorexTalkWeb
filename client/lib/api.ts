@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { PrivateChatsResponse, TelegramAccountsResponse, GroupsResponse } from "@shared/api";
+import { PrivateChatsResponse, TelegramAccountsResponse, GroupsResponse, ChatMessagesResponse } from "@shared/api";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -48,6 +48,17 @@ class ApiService {
     });
     if (!res.ok) {
       throw new Error(`Failed to fetch groups: ${res.status}`);
+    }
+    return res.json();
+  }
+
+  async fetchChatMessages(chatId: string, sessionIndex: string, offset: number = 0): Promise<ChatMessagesResponse> {
+    const headers = await this.getAuthHeaders();
+    const res = await fetch(`${this.baseUrl}/me/chats/${chatId}/messages?session_index=${sessionIndex}&limit=10&offset=${offset}`, {
+      headers,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch chat messages: ${res.status}`);
     }
     return res.json();
   }

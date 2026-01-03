@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, ChevronDown } from "lucide-react";
-import { PrivateChatsResponse, GroupsResponse } from "@shared/api";
+import { PrivateChatsResponse, GroupsResponse, ChatMessagesResponse } from "@shared/api";
 import { apiService } from "@/lib/api";
 
 export default function AppDashboard() {
@@ -45,6 +45,7 @@ export default function AppDashboard() {
 
   const [privateChats, setPrivateChats] = useState<ChatItem[]>([]);
   const [groups, setGroups] = useState<ChatItem[]>([]);
+  const [fullGroups, setFullGroups] = useState<GroupChatItem[]>([]);
   const [loadingChats, setLoadingChats] = useState(false);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [currentTab, setCurrentTab] = useState<"private" | "group">("private");
@@ -76,7 +77,7 @@ export default function AppDashboard() {
 
   useEffect(() => {
     const fetchGroups = async () => {
-      if (!activeTelegramAccount?.index || currentTab !== "group" || groups.length > 0) return;
+      if (!activeTelegramAccount?.index || currentTab !== "group") return;
       setLoadingGroups(true);
       try {
         const data = await apiService.fetchGroups(activeTelegramAccount.index);
@@ -89,6 +90,7 @@ export default function AppDashboard() {
             avatar: item.has_photo ? `${baseUrl}${item.photo_url}` : undefined,
           }));
           setGroups(groupItems);
+          setFullGroups(data.items);
         }
       } catch (error) {
         console.error('Failed to fetch groups', error);
@@ -614,8 +616,65 @@ export default function AppDashboard() {
       },
     ],
   });
+  // offsets for infinite scroll
+  const [messageOffsets, setMessageOffsets] = useState<Record<string, number>>({});
+  // loading more messages
+  const [loadingMore, setLoadingMore] = useState<Record<string, boolean>>({});
+  // total message counts
+  const [totalMessageCounts, setTotalMessageCounts] = useState<Record<string, number>>({});
 
   const [currentId, setCurrentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMessages = async (offset: number = 0) => {
+      if (!currentId || !activeTelegramAccount?.index) return;
+      // Only for private chats
+      if (parseInt(currentId) <= 0) return;
+      try {
+        const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, offset);
+        if (data.ok) {
+          const baseUrl = import.meta.env.VITE_API_BASE_URL;
+          const mappedMessages: Message[] = data.messages.map(item => {
+            const sender = item.from_user.id === parseInt(activeTelegramAccount!.id) ? "me" : item.from_user.first_name || "them";
+            const text = item.text || item.caption || "";
+            const at = new Date(item.date).getTime();
+            let file: Message['file'];
+            if (item.media_type) {
+              file = {
+                type: item.media_type as any,
+                url: item.file_id || "",
+                name: item.file_name || undefined,
+              };
+            }
+            return {
+              id: item.id.toString(),
+              sender,
+              text,
+              at,
+              file,
+              is_read: item.is_read,
+              is_outgoing: item.is_outgoing,
+              userPhoto: item.from_user.photo_url ? `${baseUrl}${item.from_user.photo_url}` : undefined,
+              chatType: item.chat_type,
+            };
+          }).reverse(); // since API returns latest first, reverse to show oldest first
+          if (offset === 0) {
+            setMessages(prev => ({ ...prev, [currentId]: mappedMessages }));
+            setMessageOffsets(prev => ({ ...prev, [currentId]: 0 }));
+            setTotalMessageCounts(prev => ({ ...prev, [currentId]: data.count }));
+          } else {
+            setMessages(prev => ({ ...prev, [currentId]: [...mappedMessages, ...(prev[currentId] || [])] }));
+            setMessageOffsets(prev => ({ ...prev, [currentId]: offset }));
+          }
+          setLoadingMore(prev => ({ ...prev, [currentId]: false }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch messages', error);
+        setLoadingMore(prev => ({ ...prev, [currentId]: false }));
+      }
+    };
+    fetchMessages();
+  }, [currentId, activeTelegramAccount?.index]);
 
   useEffect(() => {
     if (!isMobile && !currentId) {
@@ -623,8 +682,62 @@ export default function AppDashboard() {
     }
   }, [isMobile, chats]);
 
+  const loadMoreMessages = async () => {
+    if (!currentId || !activeTelegramAccount?.index || parseInt(currentId) <= 0) return;
+    if (loadingMore[currentId]) return;
+    const currentMessages = messages[currentId] || [];
+    if (currentMessages.length >= (totalMessageCounts[currentId] || 0)) return;
+    setLoadingMore(prev => ({ ...prev, [currentId]: true }));
+    const currentOffset = messageOffsets[currentId] || 0;
+    const newOffset = currentOffset + 10;
+    try {
+      const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, newOffset);
+      if (data.ok) {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL;
+        const mappedMessages: Message[] = data.messages.map(item => {
+          const sender = item.from_user.id === parseInt(activeTelegramAccount!.id) ? "me" : item.from_user.first_name || "them";
+          const text = item.text || item.caption || "";
+          const at = new Date(item.date).getTime();
+          let file: Message['file'];
+          if (item.media_type) {
+            file = {
+              type: item.media_type as any,
+              url: item.file_id || "",
+              name: item.file_name || undefined,
+            };
+          }
+          return {
+            id: item.id.toString(),
+            sender,
+            text,
+            at,
+            file,
+            is_read: item.is_read,
+            is_outgoing: item.is_outgoing,
+            userPhoto: item.from_user.photo_url ? `${baseUrl}${item.from_user.photo_url}` : undefined,
+            chatType: item.chat_type,
+          };
+        }).reverse();
+        if (mappedMessages.length > 0) {
+          setMessages(prev => ({ ...prev, [currentId]: [...mappedMessages, ...(prev[currentId] || [])] }));
+          setMessageOffsets(prev => ({ ...prev, [currentId]: newOffset }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load more messages', error);
+    } finally {
+      setLoadingMore(prev => ({ ...prev, [currentId]: false }));
+    }
+  };
+
   const currentMessages = currentId ? (messages[currentId] ?? []) : [];
-  const currentName = chats.find((c) => c.id === currentId)?.name ?? "";
+  const currentChat = chats.find((c) => c.id === currentId);
+  const currentName = currentChat?.name ?? "";
+  const currentAvatar = currentChat?.avatar;
+  const currentGroup = fullGroups.find((g) => g.id.toString() === currentId);
+  const memberCount = currentGroup?.member_count;
+  const onlineCount = currentGroup?.online_count;
+  const isLoadingMore = currentId ? loadingMore[currentId] || false : false;
 
   const send = (payload: {
     text?: string;
@@ -851,6 +964,11 @@ export default function AppDashboard() {
                 status="online"
                 messages={currentMessages}
                 collapsed={sidebarCollapsed}
+                avatar={currentAvatar}
+                memberCount={memberCount}
+                onlineCount={onlineCount}
+                onLoadMore={loadMoreMessages}
+                isLoadingMore={isLoadingMore}
               />
             </div>
             <MessageComposer onSend={send} />
@@ -881,6 +999,11 @@ export default function AppDashboard() {
                   status="online"
                   messages={currentMessages}
                   onBack={() => setCurrentId(null)}
+                  avatar={currentAvatar}
+                  memberCount={memberCount}
+                  onlineCount={onlineCount}
+                  onLoadMore={loadMoreMessages}
+                  isLoadingMore={isLoadingMore}
                 />
               </div>
               <MessageComposer onSend={send} />
