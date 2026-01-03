@@ -3,14 +3,84 @@ import "dotenv/config";
 import * as express from "express";
 import express__default from "express";
 import cors from "cors";
+import compression from "compression";
 const handleDemo = (req, res) => {
   const response = {
     message: "Hello from Express server"
   };
   res.status(200).json(response);
 };
+const handlePrivateChats = (req, res) => {
+  const { session_index } = req.params;
+  const response = {
+    ok: true,
+    count: 3,
+    items: [
+      {
+        id: 777e3,
+        full_name: "Telegram",
+        username: null,
+        last_seen: "online",
+        is_online: true,
+        has_photo: true,
+        photo_url: "/media/avatars/default.jpg"
+      },
+      {
+        id: 152856580,
+        full_name: "Zokir Aka",
+        username: "Zokriy",
+        last_seen: "recently",
+        is_online: false,
+        has_photo: false,
+        photo_url: "/media/avatars/default.jpg"
+      },
+      {
+        id: 7488382262,
+        full_name: "Bobokulov",
+        username: "bobokulov010",
+        last_seen: "offline",
+        is_online: false,
+        has_photo: false,
+        photo_url: "/media/avatars/default.jpg"
+      }
+    ]
+  };
+  res.json(response);
+};
+const handleGroups = (req, res) => {
+  const { session_index } = req.params;
+  const response = {
+    ok: true,
+    count: 3,
+    items: [
+      {
+        id: -1003453950518,
+        title: "❤️🎂Shirinliklar olami❤️🎂",
+        username: "Shaxnoz_bakeryyy",
+        has_photo: true,
+        photo_url: "/media/avatars/default.jpg"
+      },
+      {
+        id: -1001522987908,
+        title: "Arzon bumagalar",
+        username: null,
+        has_photo: false,
+        photo_url: "/media/avatars/default.jpg"
+      },
+      {
+        id: -1002740169594,
+        title: "DoubleH Programming team",
+        username: null,
+        has_photo: true,
+        photo_url: "/media/avatars/default.jpg"
+      }
+    ]
+  };
+  res.json(response);
+};
 function createServer() {
   const app2 = express__default();
+  app2.use(compression());
   app2.use(cors());
   app2.use(express__default.json());
   app2.use(express__default.urlencoded({ extended: true }));
@@ -19,6 +89,8 @@ function createServer() {
     res.json({ message: ping });
   });
   app2.get("/api/demo", handleDemo);
+  app2.get("/api/me/private_chats/:session_index", handlePrivateChats);
+  app2.get("/api/me/groups/:session_index", handleGroups);
   return app2;
 }
 const app = createServer();
