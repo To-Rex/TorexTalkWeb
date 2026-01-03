@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import compression from "compression";
 import { handleDemo } from "./routes/demo";
+import { handlePrivateChats } from "./routes/private-chats";
+import { handleGroups } from "./routes/groups";
 
 export function createServer() {
   const app = express();
@@ -20,6 +22,8 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+  app.get("/api/me/private_chats/:session_index", handlePrivateChats);
+  app.get("/api/me/groups/:session_index", handleGroups);
 
   return app;
 }

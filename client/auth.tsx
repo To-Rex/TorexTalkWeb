@@ -6,9 +6,11 @@ import React, {
   useState,
 } from "react";
 import { createClient, Session, User as SupabaseUser } from "@supabase/supabase-js";
+import { apiService } from "@/lib/api";
 
 export interface TelegramAccount {
   id: string;
+  index: string;
   name: string;
   phone?: string;
   username?: string;
@@ -38,6 +40,7 @@ export interface User {
 interface AuthCtx {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
+  loginAdmin: () => void;
   register: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   addAccount: (acc: TelegramAccount) => void;
@@ -88,7 +91,7 @@ function loadUsers(): User[] {
           password: "demopass",
           isAdmin: false,
           accounts: [
-            { id: "acc1", name: "Demo Account 1", phone: "+998901234567" },
+            { id: "acc1", index: "demo1", name: "Demo Account 1", phone: "+998901234567" },
           ],
           telegramAccounts: [],
           activeAccountId: "acc1",
@@ -181,6 +184,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user?.email]); // Only when user email changes
 
   const login = async (email: string, password: string) => {
+    // Check localStorage users first
+    const users = loadUsers();
+    const localUser = users.find(u => u.email === email && u.password === password);
+    if (localUser) {
+      setUser(localUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(localUser));
+      return true;
+    }
+
+    // Fallback to Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -191,6 +204,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     // User will be set via onAuthStateChange
     return true;
+  };
+
+  const loginAdmin = () => {
+    const adminUser: User = {
+      email: "torex.amaki@gmail.com",
+      password: "",
+      isAdmin: true,
+      accounts: [],
+      telegramAccounts: [],
+      activeAccountId: null,
+      activeTelegramAccountId: null,
+      settings: { aiForGroups: true, aiForPrivate: false },
+      blocklist: [],
+    };
+    setUser(adminUser);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(adminUser));
   };
 
   const register = async (email: string, password: string) => {
@@ -240,23 +269,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchTelegramAccounts = async () => {
     if (!user) return;
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) return;
-
-      const API_BASE_URL = 'https://talkapp.up.railway.app';
-      const response = await fetch(`${API_BASE_URL}/me/telegrams`, {
-        headers: {
-          'Authorization': `Bearer ${session.session.access_token}`,
-        },
-      });
-      if (!response.ok) return;
-
-      const data = await response.json();
+      const data = await apiService.fetchTelegramAccounts();
       if (data.ok && data.telegram_accounts) {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
         const telegramAccounts: TelegramAccount[] = data.telegram_accounts
           .filter((acc: any) => !acc.invalid)
           .map((acc: any) => ({
             id: acc.telegram_id.toString(),
+            index: acc.index,
             name: acc.full_name,
             phone: acc.phone_number,
             username: acc.username,
@@ -348,6 +368,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       login,
+      loginAdmin,
       register,
       logout,
       addAccount,

@@ -33,3 +33,45 @@ export interface TelegramAccountsResponse {
   email: string;
   telegram_accounts: TelegramAccountResponse[];
 }
+
+/**
+ * Private chat item
+ */
+export interface PrivateChatItem {
+  id: number;
+  full_name: string;
+  username: string | null;
+  last_seen: string;
+  is_online: boolean;
+  has_photo: boolean;
+  photo_url: string;
+}
+
+/**
+ * Response type for /me/private_chats/:session_index
+ */
+export interface PrivateChatsResponse {
+  ok: boolean;
+  count: number;
+  items: PrivateChatItem[];
+}
+
+/**
+ * Group chat item
+ */
+export interface GroupChatItem {
+  id: number;
+  title: string;
+  username: string | null;
+  has_photo: boolean;
+  photo_url: string;
+}
+
+/**
+ * Response type for /me/groups/:session_index
+ */
+export interface GroupsResponse {
+  ok: boolean;
+  count: number;
+  items: GroupChatItem[];
+}

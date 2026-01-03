@@ -12,16 +12,19 @@ export default function AdminLoginModal({
 }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const { loginAdmin } = useAuth();
   const navigate = useNavigate();
 
   if (!open) return null;
 
-  const handle = async () => {
-    const ok = await login("admin@torex.com", password);
-    if (!ok) return setError("Noto'g'ri admin parol");
-    onClose();
-    navigate("/admin");
+  const handle = () => {
+    if (password === "admin123") {
+      loginAdmin();
+      onClose();
+      navigate("/admin");
+    } else {
+      setError("Noto'g'ri admin parol");
+    }
   };
 
   return (

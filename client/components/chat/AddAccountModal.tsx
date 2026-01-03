@@ -19,7 +19,7 @@ import {
 import { countries, Country } from "@/lib/countries";
 import { useAuth } from "@/auth";
 
-const API_BASE_URL = 'https://talkapp.up.railway.app';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface AddAccountModalProps {
   open: boolean;

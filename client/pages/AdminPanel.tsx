@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { PrivateChatsResponse } from "@shared/api";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -36,7 +37,36 @@ const SESSIONS_KEY = "tt_admin_sessions";
 function getUsers(): TUser[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      const defaults: TUser[] = [
+        {
+          email: "torex.amaki@gmail.com",
+          password: "admin123",
+          isAdmin: true,
+          accounts: [],
+          telegramAccounts: [],
+          activeAccountId: null,
+          activeTelegramAccountId: null,
+          settings: { aiForGroups: true, aiForPrivate: false },
+          blocklist: [],
+        },
+        {
+          email: "demo@torex.com",
+          password: "demopass",
+          isAdmin: false,
+          accounts: [
+            { id: "acc1", name: "Demo Account 1", phone: "+998901234567" },
+          ],
+          telegramAccounts: [],
+          activeAccountId: "acc1",
+          activeTelegramAccountId: null,
+          settings: { aiForGroups: true, aiForPrivate: true },
+          blocklist: [],
+        },
+      ];
+      localStorage.setItem(USERS_KEY, JSON.stringify(defaults));
+      return defaults;
+    }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as TUser[];
     return [];
@@ -234,6 +264,10 @@ function writeSessions(list: Session[]) {
 }
 
 export default function AdminPanel() {
+  // Chats state
+  const [selectedSession, setSelectedSession] = useState<string>("");
+  const [chats, setChats] = useState<PrivateChatsResponse | null>(null);
+  const [loadingChats, setLoadingChats] = useState(false);
   const [tab, setTab] = useState<
     | "dashboard"
     | "users"
@@ -247,6 +281,7 @@ export default function AdminPanel() {
     | "quotas"
     | "sessions"
     | "logs"
+    | "chats"
   >("dashboard");
 
   const [users, setUsers] = useState<TUser[]>([]);
@@ -581,6 +616,21 @@ export default function AdminPanel() {
     appendLog({ action: "session_clear_all" });
   };
 
+  // Fetch private chats for a session
+  const fetchChats = async (sessionId: string) => {
+    setLoadingChats(true);
+    try {
+      const response = await fetch(`/api/me/private_chats/${sessionId}?dialog_limit=100`);
+      const data: PrivateChatsResponse = await response.json();
+      setChats(data);
+    } catch (error) {
+      console.error("Failed to fetch chats:", error);
+      setChats(null);
+    } finally {
+      setLoadingChats(false);
+    }
+  };
+
   // Logs export
   const exportLogs = () => {
     const data = JSON.stringify(readLogs(), null, 2);
@@ -613,6 +663,7 @@ export default function AdminPanel() {
                 { k: "quotas", label: "Quotas" },
                 { k: "sessions", label: "Sessions" },
                 { k: "logs", label: "Logs" },
+                { k: "chats", label: "Chats" },
               ].map((i) => (
                 <button
                   key={i.k}
@@ -635,6 +686,7 @@ export default function AdminPanel() {
                 { k: "dashboard", label: "Dashboard" },
                 { k: "users", label: "Users" },
                 { k: "accounts", label: "Accounts" },
+                { k: "chats", label: "Chats" },
               ].map((i) => (
                 <button
                   key={i.k}
@@ -1332,6 +1384,69 @@ export default function AdminPanel() {
                   })()}
                 </div>
               </div>
+            </div>
+          ) : null}
+
+          {tab === "chats" ? (
+            <div className="space-y-4">
+              <div className="rounded-xl border bg-card p-4">
+                <div className="font-semibold mb-3">Private Chats</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <select
+                    className="rounded-md bg-secondary px-3 py-2"
+                    value={selectedSession}
+                    onChange={(e) => setSelectedSession(e.target.value)}
+                  >
+                    <option value="">Select session</option>
+                    {sessions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.user} - {s.device}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="rounded-md border px-3 py-2 hover:bg-background"
+                    onClick={() => selectedSession && fetchChats(selectedSession)}
+                    disabled={!selectedSession || loadingChats}
+                  >
+                    {loadingChats ? "Loading..." : "Fetch Chats"}
+                  </button>
+                </div>
+              </div>
+
+              {chats && (
+                <div className="rounded-xl border bg-card">
+                  <div className="p-4 border-b">
+                    <div className="font-semibold">Chats ({chats.count})</div>
+                  </div>
+                  <div className="p-2 overflow-auto">
+                    <table className="w-full text-sm min-w-[600px]">
+                      <thead className="text-left text-muted-foreground">
+                        <tr>
+                          <th className="p-2">ID</th>
+                          <th className="p-2">Full Name</th>
+                          <th className="p-2">Username</th>
+                          <th className="p-2">Last Seen</th>
+                          <th className="p-2">Online</th>
+                          <th className="p-2">Photo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chats.items.map((item) => (
+                          <tr key={item.id} className="border-t">
+                            <td className="p-2">{item.id}</td>
+                            <td className="p-2">{item.full_name}</td>
+                            <td className="p-2">{item.username || "—"}</td>
+                            <td className="p-2">{item.last_seen}</td>
+                            <td className="p-2">{item.is_online ? "Yes" : "No"}</td>
+                            <td className="p-2">{item.has_photo ? "Yes" : "No"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
         </section>

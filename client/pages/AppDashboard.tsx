@@ -18,6 +18,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, ChevronDown } from "lucide-react";
+import { PrivateChatsResponse, GroupsResponse } from "@shared/api";
+import { apiService } from "@/lib/api";
 
 export default function AppDashboard() {
   const { user, switchTelegramAccount } = useAuth();
@@ -35,29 +37,75 @@ export default function AppDashboard() {
     }
   });
 
+  // if user has activeTelegramAccountId, show it
+  const activeTelegramAccount =
+    user?.telegramAccounts.find((a) => a.id === user.activeTelegramAccountId) ??
+    user?.telegramAccounts[0] ??
+    null;
+
+  const [privateChats, setPrivateChats] = useState<ChatItem[]>([]);
+  const [groups, setGroups] = useState<ChatItem[]>([]);
+  const [loadingChats, setLoadingChats] = useState(false);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [currentTab, setCurrentTab] = useState<"private" | "group">("private");
+
+  useEffect(() => {
+    const fetchPrivateChats = async () => {
+      if (!activeTelegramAccount?.index) return;
+      setLoadingChats(true);
+      try {
+        const data = await apiService.fetchPrivateChats(activeTelegramAccount.index);
+        if (data.ok) {
+          const baseUrl = import.meta.env.VITE_API_BASE_URL;
+          const privates: ChatItem[] = data.items.map(item => ({
+            id: item.id.toString(),
+            name: item.full_name || item.username || "Unknown",
+            type: "private" as const,
+            avatar: item.has_photo ? `${baseUrl}${item.photo_url}` : undefined,
+          }));
+          setPrivateChats(privates);
+        }
+      } catch (error) {
+        console.error('Failed to fetch private chats', error);
+      } finally {
+        setLoadingChats(false);
+      }
+    };
+    fetchPrivateChats();
+  }, [activeTelegramAccount?.index]);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      if (!activeTelegramAccount?.index || currentTab !== "group" || groups.length > 0) return;
+      setLoadingGroups(true);
+      try {
+        const data = await apiService.fetchGroups(activeTelegramAccount.index);
+        if (data.ok) {
+          const baseUrl = import.meta.env.VITE_API_BASE_URL;
+          const groupItems: ChatItem[] = data.items.map(item => ({
+            id: item.id.toString(),
+            name: item.title,
+            type: "group" as const,
+            avatar: item.has_photo ? `${baseUrl}${item.photo_url}` : undefined,
+          }));
+          setGroups(groupItems);
+        }
+      } catch (error) {
+        console.error('Failed to fetch groups', error);
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+    fetchGroups();
+  }, [activeTelegramAccount?.index, currentTab, groups.length]);
+
   useEffect(() => {
     try {
       localStorage.setItem("tt_chat_sidebar_collapsed", sidebarCollapsed ? "1" : "0");
     } catch {}
   }, [sidebarCollapsed]);
 
-  const [chats, setChats] = useState<ChatItem[]>([
-    { id: "1", name: "Ali", type: "private", unread: 1, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" },
-    { id: "2", name: "Nodira", type: "private", avatar: "https://ix-marketing.imgix.net/focalpoint.png?auto=format,compress&w=1946" },
-    { id: "3", name: "Jamshid", type: "private", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" },
-    { id: "4", name: "Support", type: "private" },
-    { id: "7", name: "Dilshod", type: "private", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face" },
-    { id: "8", name: "Madina", type: "private" },
-    { id: "9", name: "Bekzod", type: "private", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face" },
-    { id: "10", name: "Javlon", type: "private" },
-    { id: "11", name: "Sardor", type: "private", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&crop=face" },
-    { id: "12", name: "Nigora", type: "private" },
-    { id: "5", name: "Marketing", type: "group", unread: 12, avatar: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=100&h=100&fit=crop" },
-    { id: "6", name: "Savdo", type: "group" },
-    { id: "13", name: "Frontend Devs", type: "group", avatar: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=100&h=100&fit=crop" },
-    { id: "14", name: "Support Team", type: "group" },
-    { id: "15", name: "Family", type: "group", avatar: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=100&h=100&fit=crop" },
-  ]);
+  const chats = useMemo(() => [...privateChats, ...groups], [privateChats, groups]);
 
   // messages keyed by chat id
   const [messages, setMessages] = useState<Record<string, Message[]>>({
@@ -569,12 +617,6 @@ export default function AppDashboard() {
 
   const [currentId, setCurrentId] = useState<string | null>(null);
 
-  // if user has activeTelegramAccountId, show it
-  const activeTelegramAccount =
-    user?.telegramAccounts.find((a) => a.id === user.activeTelegramAccountId) ??
-    user?.telegramAccounts[0] ??
-    null;
-
   useEffect(() => {
     if (!isMobile && !currentId) {
       setCurrentId(chats[0]?.id ?? null);
@@ -657,10 +699,18 @@ export default function AppDashboard() {
     }
     const id = Math.random().toString(36).slice(2);
     const item: ChatItem = { id, name, type, avatar: "/placeholder.svg" };
-    setChats((prev) => [...prev, item]);
+    if (type === "private") {
+      setPrivateChats((prev) => [...prev, item]);
+    } else {
+      setGroups((prev) => [...prev, item]);
+    }
     setMessages((prev) => ({ ...prev, [id]: [] }));
     setCurrentId(id);
   };
+
+  if (!activeTelegramAccount) {
+    return <div className="py-6 px-6">Loading...</div>;
+  }
 
   return (
     <div className="py-6 px-6">
@@ -788,6 +838,11 @@ export default function AppDashboard() {
             user={user}
             collapsed={sidebarCollapsed}
             onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
+            loadingPrivate={loadingChats}
+            loadingGroups={loadingGroups}
+            emptyMessage="Chatlar yo'q"
+            tab={currentTab}
+            onTabChange={setCurrentTab}
           />
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 min-h-0">
@@ -811,6 +866,11 @@ export default function AppDashboard() {
                 onSelect={setCurrentId}
                 onCreateChat={onCreateChat}
                 user={user}
+                loadingPrivate={loadingChats}
+                loadingGroups={loadingGroups}
+                emptyMessage="Chatlar yo'q"
+                tab={currentTab}
+                onTabChange={setCurrentTab}
               />
             </div>
           ) : (

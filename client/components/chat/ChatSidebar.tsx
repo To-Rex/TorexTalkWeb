@@ -9,6 +9,7 @@ export interface ChatItem {
 }
 
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { X, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { User } from "@/auth";
 
@@ -20,6 +21,11 @@ export default function ChatSidebar({
   user,
   collapsed = false,
   onToggleCollapsed,
+  loadingPrivate = false,
+  loadingGroups = false,
+  emptyMessage = "Chatlar yo'q",
+  tab = "private",
+  onTabChange,
 }: {
   chats: ChatItem[];
   currentId: string | null;
@@ -28,8 +34,12 @@ export default function ChatSidebar({
   user: User | null;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
+  loadingPrivate?: boolean;
+  loadingGroups?: boolean;
+  emptyMessage?: string;
+  tab?: "private" | "group";
+  onTabChange?: (tab: "private" | "group") => void;
 }) {
-  const [tab, setTab] = useState<"private" | "group">("private");
   const [query, setQuery] = useState("");
 
   const lower = query.trim().toLowerCase();
@@ -71,13 +81,13 @@ export default function ChatSidebar({
       {!collapsed && (
         <div className="p-3 flex gap-2 shrink-0">
           <button
-            onClick={() => setTab("private")}
+            onClick={() => onTabChange?.("private")}
             className={`flex-1 px-3 py-2 rounded-md text-sm ${tab === "private" ? "bg-background" : "hover:bg-background/50"}`}
           >
             Private
           </button>
           <button
-            onClick={() => setTab("group")}
+            onClick={() => onTabChange?.("group")}
             className={`flex-1 px-3 py-2 rounded-md text-sm ${tab === "group" ? "bg-background" : "hover:bg-background/50"}`}
           >
             Groups
@@ -109,62 +119,75 @@ export default function ChatSidebar({
       )}
 
       <div className="p-2 space-y-1 flex-1 min-h-0 overflow-y-auto">
-        {filtered.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => onSelect(c.id)}
-            className={`w-full flex items-center justify-between rounded-lg ${collapsed ? "px-1" : "px-3"} py-2 text-left ${
-              currentId === c.id
-                ? "bg-background border"
-                : "hover:bg-background/60"
-            }`}
-          >
-            <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
-              {c.avatar ? (
-                <img
-                  src={c.avatar}
-                  alt={c.name}
-                  className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full object-cover`}
-                />
-              ) : (
-                <div className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-primary text-white grid place-items-center font-semibold ${collapsed ? "text-xs" : ""}`}>
-                  {c.name
-                    .split(" ")
-                    .map((s) => s[0])
-                    .slice(0, 2)
-                    .join("")}
+        {((tab === "private" && loadingPrivate) || (tab === "group" && loadingGroups)) ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className={`flex items-center ${collapsed ? "justify-center px-1" : "gap-3 px-3"} py-2`}>
+              <Skeleton className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full`} />
+              {!collapsed && <Skeleton className="h-4 flex-1" />}
+            </div>
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="px-3 py-2 text-sm text-muted-foreground">{emptyMessage}</div>
+        ) : (
+          <>
+            {filtered.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => onSelect(c.id)}
+                className={`w-full flex items-center justify-between rounded-lg ${collapsed ? "px-1" : "px-3"} py-2 text-left ${
+                  currentId === c.id
+                    ? "bg-background border"
+                    : "hover:bg-background/60"
+                }`}
+              >
+                <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
+                  {c.avatar ? (
+                    <img
+                      src={c.avatar}
+                      alt={c.name}
+                      className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full object-cover`}
+                    />
+                  ) : (
+                    <div className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-primary text-white grid place-items-center font-semibold ${collapsed ? "text-xs" : ""}`}>
+                      {c.name
+                        .split(" ")
+                        .map((s) => s[0])
+                        .slice(0, 2)
+                        .join("")}
+                    </div>
+                  )}
+                  {!collapsed && <div className="text-sm">{c.name}</div>}
                 </div>
-              )}
-              {!collapsed && <div className="text-sm">{c.name}</div>}
-            </div>
-            {c.unread ? (
-              <span className="text-[10px] rounded bg-primary text-primary-foreground px-1.5 py-0.5">
-                {c.unread}
-              </span>
-            ) : null}
-          </button>
-        ))}
-
-        {!collapsed && dirResults.length > 0 ? (
-          <div className="pt-2">
-            <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Natijalar
-            </div>
-            {dirResults.map((d) => (
-              <div key={`${d.type}:${d.name}`} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-background/60">
-                <div className="text-sm">{d.name}</div>
-                {onCreateChat ? (
-                  <button
-                    onClick={() => onCreateChat({ name: d.name, type: d.type })}
-                    className="text-xs rounded px-2 py-1 border hover:bg-background"
-                  >
-                    Chat boshlash
-                  </button>
+                {c.unread ? (
+                  <span className="text-[10px] rounded bg-primary text-primary-foreground px-1.5 py-0.5">
+                    {c.unread}
+                  </span>
                 ) : null}
-              </div>
+              </button>
             ))}
-          </div>
-        ) : null}
+
+            {!collapsed && dirResults.length > 0 ? (
+              <div className="pt-2">
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Natijalar
+                </div>
+                {dirResults.map((d) => (
+                  <div key={`${d.type}:${d.name}`} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-background/60">
+                    <div className="text-sm">{d.name}</div>
+                    {onCreateChat ? (
+                      <button
+                        onClick={() => onCreateChat({ name: d.name, type: d.type })}
+                        className="text-xs rounded px-2 py-1 border hover:bg-background"
+                      >
+                        Chat boshlash
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
 
     </aside>
