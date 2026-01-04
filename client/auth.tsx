@@ -47,6 +47,7 @@ interface AuthCtx {
   switchAccount: (accountId: string) => void;
   fetchTelegramAccounts: () => Promise<void>;
   switchTelegramAccount: (accountId: string) => void;
+  logoutTelegramAccount: (accountId: string) => Promise<void>;
   updateUser: (fn: (u: User) => User) => void;
   googleSignIn: (profile?: {
     email?: string;
@@ -311,6 +312,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveUsers(users);
   };
 
+  const logoutTelegramAccount = async (accountId: string) => {
+    if (!user) return;
+    const account = user.telegramAccounts.find(a => a.id === accountId);
+    if (!account) return;
+    try {
+      await apiService.logoutTelegramAccount(account.index);
+      const updatedTelegramAccounts = user.telegramAccounts.filter(a => a.id !== accountId);
+      let newActiveId = user.activeTelegramAccountId;
+      if (user.activeTelegramAccountId === accountId) {
+        newActiveId = updatedTelegramAccounts.length > 0 ? updatedTelegramAccounts[0].id : null;
+      }
+      const updated = { ...user, telegramAccounts: updatedTelegramAccounts, activeTelegramAccountId: newActiveId };
+      setUser(updated);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      const users = loadUsers().map((u) =>
+        u.email === updated.email ? updated : u,
+      );
+      saveUsers(users);
+    } catch (error) {
+      console.error('Failed to logout telegram account:', error);
+    }
+  };
+
   const updateUser = (fn: (u: User) => User) => {
     if (!user) return;
     const updated = fn(user);
@@ -375,6 +399,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       switchAccount,
       fetchTelegramAccounts,
       switchTelegramAccount,
+      logoutTelegramAccount,
       updateUser,
       googleSignIn,
       oauthSignIn,

@@ -62,6 +62,17 @@ class ApiService {
     }
     return res.json();
   }
+
+  async logoutTelegramAccount(index: string): Promise<void> {
+    const headers = await this.getAuthHeaders();
+    const res = await fetch(`${this.baseUrl}/me/telegrams/${index}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to logout telegram account: ${res.status}`);
+    }
+  }
 }
 
 export const apiService = new ApiService();

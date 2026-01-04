@@ -821,9 +821,6 @@ export default function AppDashboard() {
     setCurrentId(id);
   };
 
-  if (!activeTelegramAccount) {
-    return <div className="py-6 px-6">Loading...</div>;
-  }
 
   return (
     <div className="py-6 px-6">

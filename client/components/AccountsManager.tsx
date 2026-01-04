@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AccountsManager({
   open,
@@ -9,7 +10,8 @@ export default function AccountsManager({
   open: boolean;
   onClose: () => void;
 }) {
-  const { user, switchTelegramAccount } = useAuth();
+  const { user, switchTelegramAccount, logoutTelegramAccount } = useAuth();
+  const { toast } = useToast();
 
   if (!open) return null;
   if (!user) return null;
@@ -56,6 +58,26 @@ export default function AccountsManager({
                     className="px-2 py-1 rounded bg-secondary text-sm"
                   >
                     Faollashtirish
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await logoutTelegramAccount(a.id);
+                        toast({
+                          title: "Hisob chiqarildi",
+                          description: `${a.name} hisobi muvaffaqiyatli chiqarildi.`,
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Xatolik",
+                          description: "Hisobni chiqarishda xatolik yuz berdi.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="px-2 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600"
+                  >
+                    Chiqish
                   </button>
                 </div>
               </div>
