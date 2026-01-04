@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, ChevronDown } from "lucide-react";
-import { PrivateChatsResponse, GroupsResponse, ChatMessagesResponse } from "@shared/api";
+import { PrivateChatsResponse, GroupsResponse, ChatMessagesResponse, GroupChatItem } from "@shared/api";
 import { apiService } from "@/lib/api";
 
 export default function AppDashboard() {
@@ -628,8 +628,6 @@ export default function AppDashboard() {
   useEffect(() => {
     const fetchMessages = async (offset: number = 0) => {
       if (!currentId || !activeTelegramAccount?.index) return;
-      // Only for private chats
-      if (parseInt(currentId) <= 0) return;
       try {
         const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, offset);
         if (data.ok) {
@@ -683,14 +681,22 @@ export default function AppDashboard() {
   }, [isMobile, chats]);
 
   const loadMoreMessages = async () => {
+    console.debug('[loadMoreMessages] called', { currentId });
     if (!currentId || !activeTelegramAccount?.index || parseInt(currentId) <= 0) return;
-    if (loadingMore[currentId]) return;
+    if (loadingMore[currentId]) {
+      console.debug('[loadMoreMessages] already loading', { currentId });
+      return;
+    }
     const currentMessages = messages[currentId] || [];
-    if (currentMessages.length >= (totalMessageCounts[currentId] || 0)) return;
+    if (currentMessages.length >= (totalMessageCounts[currentId] || 0)) {
+      console.debug('[loadMoreMessages] all messages loaded', { currentId, currentMessagesLength: currentMessages.length, total: totalMessageCounts[currentId] });
+      return;
+    }
     setLoadingMore(prev => ({ ...prev, [currentId]: true }));
     const currentOffset = messageOffsets[currentId] || 0;
     const newOffset = currentOffset + 10;
     try {
+      console.debug('[loadMoreMessages] fetching', { currentId, currentOffset, newOffset });
       const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, newOffset);
       if (data.ok) {
         const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -722,6 +728,7 @@ export default function AppDashboard() {
           setMessages(prev => ({ ...prev, [currentId]: [...mappedMessages, ...(prev[currentId] || [])] }));
           setMessageOffsets(prev => ({ ...prev, [currentId]: newOffset }));
         }
+        console.debug('[loadMoreMessages] fetched', { currentId, got: mappedMessages.length });
       }
     } catch (error) {
       console.error('Failed to load more messages', error);

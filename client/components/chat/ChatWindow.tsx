@@ -45,13 +45,17 @@ export default function ChatWindow({
   isLoadingMore?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const { user, addToBlocklist, removeFromBlocklist } = useAuth();
   const [autoReply, setAutoReply] = useState<boolean>(false);
-  const [scrollAdjustment, setScrollAdjustment] = useState<number>(0);
   const [isAdjustingScroll, setIsAdjustingScroll] = useState<boolean>(false);
+  const pendingScroll = useRef<{ prevScrollHeight: number; prevScrollTop: number } | null>(null);
+  const lastLoadMoreRef = useRef<number>(0);
+  const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const isInitialLoad = useRef<boolean>(true);
   const hasScrolledToBottom = useRef<boolean>(false);
   const prevMessagesLength = useRef<number>(messages.length);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const isBlocked = (user?.blocklist ?? []).includes(title);
   const toggleBlock = () => {
     if (!user) return;
@@ -60,25 +64,27 @@ export default function ChatWindow({
   };
 
   useLayoutEffect(() => {
-    if (scrollAdjustment > 0 && ref.current && !isAdjustingScroll) {
+    if (pendingScroll.current && ref.current) {
       setIsAdjustingScroll(true);
+      const { prevScrollHeight, prevScrollTop } = pendingScroll.current;
       const newScrollHeight = ref.current.scrollHeight;
-      ref.current.scrollTop = newScrollHeight - scrollAdjustment;
-      setScrollAdjustment(0);
+      ref.current.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+      pendingScroll.current = null;
       setIsAdjustingScroll(false);
     }
-  }, [messages.length, scrollAdjustment, isAdjustingScroll]);
+  }, [messages.length]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isInitialLoad.current && messages.length > 0 && ref.current) {
-      const timer = setTimeout(() => {
-        if (ref.current && ref.current.scrollHeight > ref.current.clientHeight) {
-          ref.current.scrollTop = ref.current.scrollHeight;
-        }
-        isInitialLoad.current = false;
-        hasScrolledToBottom.current = true;
-      }, 0);
-      return () => clearTimeout(timer);
+      // Scroll to bottom on first load. Prefer the last message ref when available.
+      if (lastMessageRef.current) {
+        lastMessageRef.current.scrollIntoView({ behavior: 'auto' });
+      } else {
+        ref.current.scrollTop = ref.current.scrollHeight;
+      }
+      isInitialLoad.current = false;
+      hasScrolledToBottom.current = true;
+      setInitialLoadDone(true);
     }
   }, [messages.length]);
 
@@ -96,8 +102,24 @@ export default function ChatWindow({
   useEffect(() => {
     if (!onLoadMore) return;
     const handleScroll = () => {
-      if (ref.current && ref.current.scrollTop <= 100 && !isLoadingMore && !isAdjustingScroll && hasScrolledToBottom.current) {
-        setScrollAdjustment(ref.current.scrollHeight);
+      if (isInitialLoad.current) return; // avoid firing during initial render
+      const el = ref.current;
+      if (!el) return;
+      const { scrollTop, scrollHeight, clientHeight } = el;
+
+      // Track whether user is near the bottom for auto-scroll decisions
+      hasScrolledToBottom.current = scrollTop + clientHeight >= scrollHeight - 100;
+
+      // When user scrolls near top, load more messages (debounced short interval)
+      if (scrollTop <= 50 && !isLoadingMore && !isAdjustingScroll) {
+        const now = Date.now();
+        if (now - lastLoadMoreRef.current < 500) return; // prevent rapid repeated loads
+        lastLoadMoreRef.current = now;
+        pendingScroll.current = {
+          prevScrollHeight: scrollHeight,
+          prevScrollTop: scrollTop,
+        };
+        console.debug('[ChatWindow] handleScroll triggering onLoadMore', { scrollTop, clientHeight, scrollHeight });
         onLoadMore();
       }
     };
@@ -106,7 +128,39 @@ export default function ChatWindow({
       scrollElement.addEventListener('scroll', handleScroll);
       return () => scrollElement.removeEventListener('scroll', handleScroll);
     }
-  }, [onLoadMore, isLoadingMore, isAdjustingScroll]);
+  }, [onLoadMore, isLoadingMore, isAdjustingScroll, initialLoadDone]);
+
+  // IntersectionObserver sentinel to trigger loading older messages when top becomes visible
+  useEffect(() => {
+    if (!onLoadMore || !initialLoadDone) return;
+    const sentinel = topSentinelRef.current;
+    const container = ref.current;
+    if (!sentinel || !container) return;
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          console.debug('[ChatWindow] sentinel intersecting', { isLoadingMore, isAdjustingScroll, isInitialLoad: isInitialLoad.current });
+        }
+        if (entry.isIntersecting && !isLoadingMore && !isAdjustingScroll && !isInitialLoad.current) {
+          const now = Date.now();
+          if (now - lastLoadMoreRef.current < 500) return;
+          lastLoadMoreRef.current = now;
+          // store scroll snapshot to restore after prepend
+          pendingScroll.current = {
+            prevScrollHeight: container.scrollHeight,
+            prevScrollTop: container.scrollTop,
+          };
+          console.debug('[ChatWindow] IntersectionObserver triggering onLoadMore', { prevScrollTop: pendingScroll.current.prevScrollTop, prevScrollHeight: pendingScroll.current.prevScrollHeight });
+          onLoadMore();
+        }
+      });
+    }, { root: container, rootMargin: '0px', threshold: 0.01 });
+
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [onLoadMore, isLoadingMore, isAdjustingScroll, initialLoadDone]);
+
 
   useEffect(() => {
     if (!user) return;
@@ -172,8 +226,19 @@ export default function ChatWindow({
       </div>
       <div
         ref={ref}
-        className="flex-1 overflow-auto p-3 space-y-2 bg-background scroll-smooth"
+        className="relative flex-1 overflow-auto p-3 space-y-2 bg-background scroll-smooth"
        >
+         {/* top sentinel for IntersectionObserver to trigger load-more when it becomes visible */}
+         <div ref={topSentinelRef} className="w-full h-[1px]" aria-hidden="true" />
+         {/* Top overlay loader so it's clearly visible when loading older messages */}
+         {(isLoadingMore || pendingScroll.current) && (
+           <div className="absolute left-0 right-0 top-0 flex justify-center pt-2 z-10 pointer-events-none">
+             <div className="flex items-center gap-2 bg-background/80 rounded px-3 py-1 backdrop-blur border">
+               <Loader2 className="h-4 w-4 animate-spin" />
+               <div className="text-xs text-muted-foreground">Yuklanmoqda...</div>
+             </div>
+           </div>
+         )}
          {isLoadingMore && (
            <div className="flex justify-center py-2">
              <Loader2 className="h-4 w-4 animate-spin" />
@@ -214,10 +279,11 @@ export default function ChatWindow({
             const firstMessage = group[0];
             const isGroupChat = firstMessage.chatType === "supergroup";
             const isFromMe = firstMessage.sender === "me";
+            const isLastGroup = groupIndex === messageGroups.length - 1;
 
             if (isGroupChat && !isFromMe) {
               return (
-                <div key={`group-${groupIndex}`} className="flex gap-2 relative">
+                <div key={`group-${groupIndex}`} className="flex gap-2 relative" ref={isLastGroup ? lastMessageRef : null}>
                   <div className="sticky top-0 self-start">
                     {firstMessage.userPhoto ? (
                       <img
@@ -288,10 +354,11 @@ export default function ChatWindow({
                 </div>
               );
             } else {
-              return group.map((m) => (
+              return group.map((m, messageIndex) => (
                 <div
                   key={m.id}
                   className={`w-fit max-w-[80%] rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}
+                  ref={isLastGroup && messageIndex === group.length - 1 ? lastMessageRef : null}
                 >
                   {m.sender !== "me" ? (
                     <div className="text-xs font-medium text-white mb-1">

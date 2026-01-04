@@ -54,13 +54,22 @@ class ApiService {
 
   async fetchChatMessages(chatId: string, sessionIndex: string, offset: number = 0): Promise<ChatMessagesResponse> {
     const headers = await this.getAuthHeaders();
-    const res = await fetch(`${this.baseUrl}/me/chats/${chatId}/messages?session_index=${sessionIndex}&limit=10&offset=${offset}`, {
-      headers,
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch chat messages: ${res.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    try {
+      const res = await fetch(`${this.baseUrl}/me/chats/${chatId}/messages?session_index=${sessionIndex}&limit=10&offset=${offset}`, {
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch chat messages: ${res.status}`);
+      }
+      return res.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
     }
-    return res.json();
   }
 
   async logoutTelegramAccount(index: string): Promise<void> {
