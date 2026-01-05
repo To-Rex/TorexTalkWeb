@@ -86,7 +86,9 @@ export default function ChatWindow({
         ref.current.scrollTop = ref.current.scrollHeight;
         try { ref.current.style.scrollBehavior = prevBehavior; } catch (e) {}
       }
+      // Mark initial load done and set last load timestamp to prevent immediate load-more
       isInitialLoad.current = false;
+      try { lastLoadMoreRef.current = Date.now(); } catch (e) {}
     }
   }, [messages.length]);
 
