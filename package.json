@@ -102,7 +102,7 @@
     "typescript": "^5.9.2",
     "vaul": "^1.1.2",
     "vite": "^7.1.2",
-    "vite-plugin-imagemin": "^0.6.1",
+    "vite-plugin-imagemin": "^0.4.0",
     "vite-plugin-pwa": "^1.1.0",
     "vitest": "^3.2.4"
   },

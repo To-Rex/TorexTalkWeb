@@ -57,17 +57,21 @@ class ApiService {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     try {
-      const res = await fetch(`${this.baseUrl}/me/chats/${chatId}/messages?session_index=${sessionIndex}&limit=10&offset=${offset}`, {
+      const url = `${this.baseUrl}/me/chats/${chatId}/messages?session_index=${sessionIndex}&limit=10&offset=${offset}`;
+      console.log('Fetching chat messages from:', url);
+      const res = await fetch(url, {
         headers,
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      console.log('Fetch response status:', res.status);
       if (!res.ok) {
         throw new Error(`Failed to fetch chat messages: ${res.status}`);
       }
       return res.json();
     } catch (error) {
       clearTimeout(timeoutId);
+      console.error('Fetch error for chat messages:', error);
       throw error;
     }
   }

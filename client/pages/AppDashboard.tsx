@@ -622,14 +622,16 @@ export default function AppDashboard() {
   const [loadingMore, setLoadingMore] = useState<Record<string, boolean>>({});
   // total message counts
   const [totalMessageCounts, setTotalMessageCounts] = useState<Record<string, number>>({});
+  // has more messages to load
+  const [hasMore, setHasMore] = useState<Record<string, boolean>>({});
 
   const [currentId, setCurrentId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMessages = async (offset: number = 0) => {
+    const fetchMessages = async () => {
       if (!currentId || !activeTelegramAccount?.index) return;
       try {
-        const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, offset);
+        const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, 0);
         if (data.ok) {
           const baseUrl = import.meta.env.VITE_API_BASE_URL;
           const mappedMessages: Message[] = data.messages.map(item => {
@@ -656,19 +658,13 @@ export default function AppDashboard() {
               chatType: item.chat_type,
             };
           }).reverse(); // since API returns latest first, reverse to show oldest first
-          if (offset === 0) {
-            setMessages(prev => ({ ...prev, [currentId]: mappedMessages }));
-            setMessageOffsets(prev => ({ ...prev, [currentId]: 0 }));
-            setTotalMessageCounts(prev => ({ ...prev, [currentId]: data.count }));
-          } else {
-            setMessages(prev => ({ ...prev, [currentId]: [...mappedMessages, ...(prev[currentId] || [])] }));
-            setMessageOffsets(prev => ({ ...prev, [currentId]: offset }));
-          }
-          setLoadingMore(prev => ({ ...prev, [currentId]: false }));
+          setMessages(prev => ({ ...prev, [currentId]: mappedMessages }));
+          setMessageOffsets(prev => ({ ...prev, [currentId]: 0 }));
+          setTotalMessageCounts(prev => ({ ...prev, [currentId]: data.count }));
+          setHasMore(prev => ({ ...prev, [currentId]: data.messages.length === 10 }));
         }
       } catch (error) {
         console.error('Failed to fetch messages', error);
-        setLoadingMore(prev => ({ ...prev, [currentId]: false }));
       }
     };
     fetchMessages();
@@ -681,23 +677,12 @@ export default function AppDashboard() {
   }, [isMobile, chats]);
 
   const loadMoreMessages = async () => {
-    console.debug('[loadMoreMessages] called', { currentId });
-    if (!currentId || !activeTelegramAccount?.index || parseInt(currentId) <= 0) return;
-    if (loadingMore[currentId]) {
-      console.debug('[loadMoreMessages] already loading', { currentId });
-      return;
-    }
-    const currentMessages = messages[currentId] || [];
-    if (currentMessages.length >= (totalMessageCounts[currentId] || 0)) {
-      console.debug('[loadMoreMessages] all messages loaded', { currentId, currentMessagesLength: currentMessages.length, total: totalMessageCounts[currentId] });
-      return;
-    }
+    if (!currentId || !activeTelegramAccount?.index || loadingMore[currentId]) return;
     setLoadingMore(prev => ({ ...prev, [currentId]: true }));
     const currentOffset = messageOffsets[currentId] || 0;
     const newOffset = currentOffset + 10;
     try {
-      console.debug('[loadMoreMessages] fetching', { currentId, currentOffset, newOffset });
-      const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, newOffset);
+      const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount?.index || '1', newOffset);
       if (data.ok) {
         const baseUrl = import.meta.env.VITE_API_BASE_URL;
         const mappedMessages: Message[] = data.messages.map(item => {
@@ -727,8 +712,8 @@ export default function AppDashboard() {
         if (mappedMessages.length > 0) {
           setMessages(prev => ({ ...prev, [currentId]: [...mappedMessages, ...(prev[currentId] || [])] }));
           setMessageOffsets(prev => ({ ...prev, [currentId]: newOffset }));
+          setHasMore(prev => ({ ...prev, [currentId]: mappedMessages.length === 10 }));
         }
-        console.debug('[loadMoreMessages] fetched', { currentId, got: mappedMessages.length });
       }
     } catch (error) {
       console.error('Failed to load more messages', error);
@@ -736,6 +721,7 @@ export default function AppDashboard() {
       setLoadingMore(prev => ({ ...prev, [currentId]: false }));
     }
   };
+
 
   const currentMessages = currentId ? (messages[currentId] ?? []) : [];
   const currentChat = chats.find((c) => c.id === currentId);
@@ -964,6 +950,7 @@ export default function AppDashboard() {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 min-h-0">
               <ChatWindow
+                key={currentId}
                 title={currentName}
                 status="online"
                 messages={currentMessages}
@@ -999,6 +986,7 @@ export default function AppDashboard() {
             <div className="flex flex-col h-[70vh] min-h-0">
               <div className="flex-1 min-h-0">
                 <ChatWindow
+                  key={currentId}
                   title={currentName}
                   status="online"
                   messages={currentMessages}
