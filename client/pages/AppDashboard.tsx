@@ -48,6 +48,7 @@ export default function AppDashboard() {
   const [fullGroups, setFullGroups] = useState<GroupChatItem[]>([]);
   const [loadingChats, setLoadingChats] = useState(false);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [currentTab, setCurrentTab] = useState<"private" | "group">("private");
 
   useEffect(() => {
@@ -630,6 +631,7 @@ export default function AppDashboard() {
   useEffect(() => {
     const fetchMessages = async () => {
       if (!currentId || !activeTelegramAccount?.index) return;
+      setLoadingMessages(true);
       try {
         const data = await apiService.fetchChatMessages(currentId, activeTelegramAccount.index, 0);
         if (data.ok) {
@@ -665,6 +667,8 @@ export default function AppDashboard() {
         }
       } catch (error) {
         console.error('Failed to fetch messages', error);
+      } finally {
+        setLoadingMessages(false);
       }
     };
     fetchMessages();
@@ -960,6 +964,7 @@ export default function AppDashboard() {
                 onlineCount={onlineCount}
                 onLoadMore={loadMoreMessages}
                 isLoadingMore={isLoadingMore}
+                loadingMessages={loadingMessages}
               />
             </div>
             <MessageComposer onSend={send} />
@@ -996,6 +1001,7 @@ export default function AppDashboard() {
                   onlineCount={onlineCount}
                   onLoadMore={loadMoreMessages}
                   isLoadingMore={isLoadingMore}
+                  loadingMessages={loadingMessages}
                 />
               </div>
               <MessageComposer onSend={send} />

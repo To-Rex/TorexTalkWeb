@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/auth";
 import { ArrowLeft, Check, CheckCheck, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface FileAttachment {
   type: "image" | "audio" | "document" | "location";
@@ -32,6 +33,7 @@ export default function ChatWindow({
   onlineCount,
   onLoadMore,
   isLoadingMore,
+  loadingMessages,
 }: {
   title: string;
   status: string;
@@ -43,6 +45,7 @@ export default function ChatWindow({
   onlineCount?: number;
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  loadingMessages?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
@@ -219,15 +222,6 @@ export default function ChatWindow({
           >
             {/* top sentinel for IntersectionObserver to trigger load-more when it becomes visible */}
             <div ref={topSentinelRef} className="w-full h-[1px]" aria-hidden="true" />
-            {/* Top overlay loader so it's clearly visible when loading older messages */}
-            {isLoadingMore && (
-              <div className="absolute left-0 right-0 top-0 flex justify-center pt-2 z-10 pointer-events-none">
-                <div className="flex items-center gap-2 bg-background/80 rounded px-3 py-1 backdrop-blur border">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <div className="text-xs text-muted-foreground">Yuklanmoqda...</div>
-                </div>
-              </div>
-            )}
             {isBlocked ? "Blokdan chiqarish" : "Mass xabardan bloklash"}
           </button>
         </div>
@@ -236,185 +230,214 @@ export default function ChatWindow({
         ref={ref}
         className="relative flex-1 overflow-auto p-3 space-y-2 bg-background scroll-smooth"
        >
-         {(() => {
-          // Group consecutive messages by sender for group chats
-          const messageGroups: Message[][] = [];
-          let currentGroup: Message[] = [];
-          let lastSender = '';
+         {loadingMessages && messages.length === 0 ? (
+           // Skeleton loader for messages
+           <div className="space-y-4">
+             <div className="flex justify-start">
+               <Skeleton className="h-10 w-48 rounded-lg" />
+             </div>
+             <div className="flex justify-end">
+               <Skeleton className="h-10 w-32 rounded-lg" />
+             </div>
+             <div className="flex justify-start">
+               <Skeleton className="h-12 w-56 rounded-lg" />
+             </div>
+             <div className="flex justify-end">
+               <Skeleton className="h-8 w-40 rounded-lg" />
+             </div>
+             <div className="flex justify-start">
+               <Skeleton className="h-10 w-44 rounded-lg" />
+             </div>
+           </div>
+         ) : (
+           (() => {
+             // Group consecutive messages by sender for group chats
+             const messageGroups: Message[][] = [];
+             let currentGroup: Message[] = [];
+             let lastSender = '';
 
-          messages.forEach((m) => {
-            if (m.chatType === "supergroup" && m.sender !== "me") {
-              if (m.sender !== lastSender) {
-                if (currentGroup.length > 0) {
-                  messageGroups.push(currentGroup);
-                }
-                currentGroup = [m];
-                lastSender = m.sender;
-              } else {
-                currentGroup.push(m);
-              }
-            } else {
-              if (currentGroup.length > 0) {
-                messageGroups.push(currentGroup);
-                currentGroup = [];
-                lastSender = '';
-              }
-              messageGroups.push([m]);
-            }
-          });
+             messages.forEach((m) => {
+               if (m.chatType === "supergroup" && m.sender !== "me") {
+                 if (m.sender !== lastSender) {
+                   if (currentGroup.length > 0) {
+                     messageGroups.push(currentGroup);
+                   }
+                   currentGroup = [m];
+                   lastSender = m.sender;
+                 } else {
+                   currentGroup.push(m);
+                 }
+               } else {
+                 if (currentGroup.length > 0) {
+                   messageGroups.push(currentGroup);
+                   currentGroup = [];
+                   lastSender = '';
+                 }
+                 messageGroups.push([m]);
+               }
+             });
 
-          if (currentGroup.length > 0) {
-            messageGroups.push(currentGroup);
-          }
+             if (currentGroup.length > 0) {
+               messageGroups.push(currentGroup);
+             }
 
-          return messageGroups.map((group, groupIndex) => {
-            const firstMessage = group[0];
-            const isGroupChat = firstMessage.chatType === "supergroup";
-            const isFromMe = firstMessage.sender === "me";
-            const isLastGroup = groupIndex === messageGroups.length - 1;
+             return messageGroups.map((group, groupIndex) => {
+               const firstMessage = group[0];
+               const isGroupChat = firstMessage.chatType === "supergroup";
+               const isFromMe = firstMessage.sender === "me";
+               const isLastGroup = groupIndex === messageGroups.length - 1;
 
-            if (isGroupChat && !isFromMe) {
-              return (
-                <div key={`group-${groupIndex}`} className="flex gap-2 relative" ref={isLastGroup ? lastMessageRef : null}>
-                  <div className="sticky top-0 self-start">
-                    {firstMessage.userPhoto ? (
-                      <img
-                        src={firstMessage.userPhoto}
-                        alt={firstMessage.sender}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-xs flex-shrink-0">
-                        {firstMessage.sender.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col max-w-[80%]">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">
-                      {firstMessage.sender === "them" ? title : firstMessage.sender}
-                    </div>
-                    {group.map((m) => (
-                      <div key={m.id} className="w-fit rounded-lg px-3 py-2 text-sm text-white bg-secondary mb-1">
-                        {m.text ? (
-                          <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
-                        ) : null}
-                        {m.file ? (
-                          m.file.type === "image" ? (
-                            <img
-                              src={m.file.url}
-                              alt={m.file.name ?? "image"}
-                              className="max-w-full rounded-md mt-1"
-                            />
-                          ) : m.file.type === "audio" ? (
-                            <audio controls src={m.file.url} className="mt-1 w-full" />
-                          ) : m.file.type === "document" ? (
-                            <a
-                              href={m.file.url}
-                              download={m.file.name}
-                              className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
-                            >
-                              📎 {m.file.name ?? "Hujjat"}
-                            </a>
-                          ) : (
-                            <div className="mt-1 rounded-md bg-background/60 border p-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-lg">📍</span>
-                                <div className="flex-1">
-                                  <div className="font-medium">Lokatsiya</div>
-                                  {m.file.name ? (
-                                    <div className="text-xs text-muted-foreground">{m.file.name}</div>
-                                  ) : null}
-                                </div>
-                                <a
-                                  href={m.file.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-xs rounded px-2 py-1 border hover:bg-background"
-                                >
-                                  Ko'rish
-                                </a>
-                              </div>
-                            </div>
-                          )
-                        ) : null}
-                        <div className="text-[10px] text-white mt-1">
-                          {new Date(m.at).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            } else {
-              return group.map((m, messageIndex) => (
-                <div
-                  key={m.id}
-                  className={`w-fit max-w-[80%] rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}
-                  ref={isLastGroup && messageIndex === group.length - 1 ? lastMessageRef : null}
-                >
-                  {m.sender !== "me" ? (
-                    <div className="text-xs font-medium text-white mb-1">
-                      {m.sender === "them" ? title : m.sender}
-                    </div>
-                  ) : null}
-                  {m.text ? (
-                    <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
-                  ) : null}
-                  {m.file ? (
-                    m.file.type === "image" ? (
-                      <img
-                        src={m.file.url}
-                        alt={m.file.name ?? "image"}
-                        className="max-w-full rounded-md mt-1"
-                      />
-                    ) : m.file.type === "audio" ? (
-                      <audio controls src={m.file.url} className="mt-1 w-full" />
-                    ) : m.file.type === "document" ? (
-                      <a
-                        href={m.file.url}
-                        download={m.file.name}
-                        className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
-                      >
-                        📎 {m.file.name ?? "Hujjat"}
-                      </a>
-                    ) : (
-                      <div className="mt-1 rounded-md bg-background/60 border p-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-lg">📍</span>
-                          <div className="flex-1">
-                            <div className="font-medium">Lokatsiya</div>
-                            {m.file.name ? (
-                              <div className="text-xs text-muted-foreground">{m.file.name}</div>
-                            ) : null}
-                          </div>
-                          <a
-                            href={m.file.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs rounded px-2 py-1 border hover:bg-background"
-                          >
-                            Ko'rish
-                          </a>
-                        </div>
-                      </div>
-                    )
-                  ) : null}
-                  <div className="text-[10px] text-white mt-1 flex items-center gap-1">
-                    {new Date(m.at).toLocaleTimeString()}
-                    {isFromMe && m.is_outgoing && (
-                      m.is_read ? (
-                        <CheckCheck className="h-3 w-3" />
-                      ) : (
-                        <Check className="h-3 w-3" />
-                      )
-                    )}
-                  </div>
-                </div>
-              ));
-            }
-          });
-        })()}
-      </div>
+               if (isGroupChat && !isFromMe) {
+                 return (
+                   <div key={`group-${groupIndex}`} className="flex gap-2 relative" ref={isLastGroup ? lastMessageRef : null}>
+                     <div className="sticky top-0 self-start">
+                       {firstMessage.userPhoto ? (
+                         <img
+                           src={firstMessage.userPhoto}
+                           alt={firstMessage.sender}
+                           className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                         />
+                       ) : (
+                         <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-xs flex-shrink-0">
+                           {firstMessage.sender.charAt(0).toUpperCase()}
+                         </div>
+                       )}
+                     </div>
+                     <div className="flex flex-col max-w-[80%]">
+                       <div className="text-xs font-medium text-muted-foreground mb-1">
+                         {firstMessage.sender === "them" ? title : firstMessage.sender}
+                       </div>
+                       {group.map((m) => (
+                         <div key={m.id} className="w-fit rounded-lg px-3 py-2 text-sm text-white bg-secondary mb-1">
+                           {m.text ? (
+                             <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
+                           ) : null}
+                           {m.file ? (
+                             m.file.type === "image" ? (
+                               <img
+                                 src={m.file.url}
+                                 alt={m.file.name ?? "image"}
+                                 className="max-w-full rounded-md mt-1"
+                               />
+                             ) : m.file.type === "audio" ? (
+                               <audio controls src={m.file.url} className="mt-1 w-full" />
+                             ) : m.file.type === "document" ? (
+                               <a
+                                 href={m.file.url}
+                                 download={m.file.name}
+                                 className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
+                               >
+                                 📎 {m.file.name ?? "Hujjat"}
+                               </a>
+                             ) : (
+                               <div className="mt-1 rounded-md bg-background/60 border p-2">
+                                 <div className="flex items-center gap-2 text-sm">
+                                   <span className="text-lg">📍</span>
+                                   <div className="flex-1">
+                                     <div className="font-medium">Lokatsiya</div>
+                                     {m.file.name ? (
+                                       <div className="text-xs text-muted-foreground">{m.file.name}</div>
+                                     ) : null}
+                                   </div>
+                                   <a
+                                     href={m.file.url}
+                                     target="_blank"
+                                     rel="noreferrer"
+                                     className="text-xs rounded px-2 py-1 border hover:bg-background"
+                                   >
+                                     Ko'rish
+                                   </a>
+                                 </div>
+                               </div>
+                             )
+                           ) : null}
+                           <div className="text-[10px] text-white mt-1">
+                             {new Date(m.at).toLocaleTimeString()}
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 );
+               } else {
+                 return group.map((m, messageIndex) => (
+                   <div
+                     key={m.id}
+                     className={`w-fit max-w-[80%] rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}
+                     ref={isLastGroup && messageIndex === group.length - 1 ? lastMessageRef : null}
+                   >
+                     {m.sender !== "me" ? (
+                       <div className="text-xs font-medium text-white mb-1">
+                         {m.sender === "them" ? title : m.sender}
+                       </div>
+                     ) : null}
+                     {m.text ? (
+                       <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
+                     ) : null}
+                     {m.file ? (
+                       m.file.type === "image" ? (
+                         <img
+                           src={m.file.url}
+                           alt={m.file.name ?? "image"}
+                           className="max-w-full rounded-md mt-1"
+                         />
+                       ) : m.file.type === "audio" ? (
+                         <audio controls src={m.file.url} className="mt-1 w-full" />
+                       ) : m.file.type === "document" ? (
+                         <a
+                           href={m.file.url}
+                           download={m.file.name}
+                           className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
+                         >
+                           📎 {m.file.name ?? "Hujjat"}
+                         </a>
+                       ) : (
+                         <div className="mt-1 rounded-md bg-background/60 border p-2">
+                           <div className="flex items-center gap-2 text-sm">
+                             <span className="text-lg">📍</span>
+                             <div className="flex-1">
+                               <div className="font-medium">Lokatsiya</div>
+                               {m.file.name ? (
+                                 <div className="text-xs text-muted-foreground">{m.file.name}</div>
+                               ) : null}
+                             </div>
+                             <a
+                               href={m.file.url}
+                               target="_blank"
+                               rel="noreferrer"
+                               className="text-xs rounded px-2 py-1 border hover:bg-background"
+                             >
+                               Ko'rish
+                             </a>
+                           </div>
+                         </div>
+                       )
+                     ) : null}
+                     <div className="text-[10px] text-white mt-1 flex items-center gap-1">
+                       {new Date(m.at).toLocaleTimeString()}
+                       {isFromMe && m.is_outgoing && (
+                         m.is_read ? (
+                           <CheckCheck className="h-3 w-3" />
+                         ) : (
+                           <Check className="h-3 w-3" />
+                         )
+                       )}
+                     </div>
+                   </div>
+                 ));
+               }
+             });
+           })()
+         )}
+         {isLoadingMore && (
+           <div className="absolute left-0 right-0 top-0 flex justify-center pt-2 z-10 pointer-events-none">
+             <div className="flex items-center gap-2 bg-background/80 rounded px-3 py-1 backdrop-blur border">
+               <Loader2 className="h-4 w-4 animate-spin" />
+               <div className="text-xs text-muted-foreground">Yuklanmoqda...</div>
+             </div>
+           </div>
+         )}
+       </div>
     </div>
   );
 }
