@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ChatSidebar, { ChatItem } from "@/components/chat/ChatSidebar";
-import ChatWindow, { Message } from "@/components/chat/ChatWindow";
+import ChatWindow, { Message, FileAttachment } from "@/components/chat/ChatWindow";
 import MessageComposer from "@/components/chat/MessageComposer";
 import MassMessageModal from "@/components/chat/MassMessageModal";
 import AddAccountModal from "@/components/chat/AddAccountModal";
@@ -642,10 +642,21 @@ export default function AppDashboard() {
             const at = new Date(item.date).getTime();
             let file: Message['file'];
             if (item.media_type) {
+              const mediaTypeMap: Record<string, FileAttachment['type']> = {
+                photo: 'image',
+                video: 'video',
+                video_note: 'video_note',
+                audio: 'audio',
+                document: 'document',
+                location: 'location',
+                contact: 'contact',
+              };
+              const mappedType = mediaTypeMap[item.media_type] || 'document';
               file = {
-                type: item.media_type as any,
-                url: item.file_id || "",
+                type: mappedType,
+                url: item.file_url ? `${baseUrl}${item.file_url}` : item.file_id ? `${baseUrl}${item.file_id}` : "",
                 name: item.file_name || undefined,
+                mime_type: item.mime_type || undefined,
               };
             }
             return {
@@ -695,10 +706,21 @@ export default function AppDashboard() {
           const at = new Date(item.date).getTime();
           let file: Message['file'];
           if (item.media_type) {
+            const mediaTypeMap: Record<string, FileAttachment['type']> = {
+              photo: 'image',
+              video: 'video',
+              video_note: 'video',
+              audio: 'audio',
+              document: 'document',
+              location: 'location',
+              contact: 'contact',
+            };
+            const mappedType = mediaTypeMap[item.media_type] || 'document';
             file = {
-              type: item.media_type as any,
+              type: mappedType,
               url: item.file_id || "",
               name: item.file_name || undefined,
+              mime_type: item.mime_type || undefined,
             };
           }
           return {

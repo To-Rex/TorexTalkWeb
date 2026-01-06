@@ -1,13 +1,22 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/auth";
-import { ArrowLeft, Check, CheckCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Loader2, MapPin, User, Play, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import VideoNotePlayer from "./VideoNotePlayer";
 
 export interface FileAttachment {
-  type: "image" | "audio" | "document" | "location";
+  type: "image" | "audio" | "document" | "location" | "video" | "video_note" | "contact";
   url: string;
   name?: string;
+  size?: number;
+  duration?: number;
+  mime_type?: string;
+  contact?: {
+    first_name: string;
+    last_name?: string;
+    phone_number: string;
+  };
 }
 
 export interface Message {
@@ -257,7 +266,7 @@ export default function ChatWindow({
              let lastSender = '';
 
              messages.forEach((m) => {
-               if (m.chatType === "supergroup" && m.sender !== "me") {
+               if (m.chatType === "supergroup" && m.sender !== "me" && m.file?.type !== 'video_note') {
                  if (m.sender !== lastSender) {
                    if (currentGroup.length > 0) {
                      messageGroups.push(currentGroup);
@@ -304,40 +313,87 @@ export default function ChatWindow({
                        )}
                      </div>
                      <div className="flex flex-col max-w-[80%]">
-                       <div className="text-xs font-medium text-muted-foreground mb-1">
-                         {firstMessage.sender === "them" ? title : firstMessage.sender}
-                       </div>
+                       {firstMessage.file?.type !== 'video_note' && firstMessage.file?.type !== 'image' && (
+                         <div className="text-xs font-medium text-muted-foreground mb-1">
+                           {firstMessage.sender === "them" ? title : firstMessage.sender}
+                         </div>
+                       )}
                        {group.map((m) => (
-                         <div key={m.id} className="w-fit rounded-lg px-3 py-2 text-sm text-white bg-secondary mb-1">
-                           {m.text ? (
+                         <div key={m.id} className={`w-fit mb-1 ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? '' : 'rounded-lg px-3 py-2 text-sm text-white bg-secondary'}`}>
+                           {m.text && m.file?.type !== 'video_note' ? (
                              <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
                            ) : null}
                            {m.file ? (
                              m.file.type === "image" ? (
-                               <img
+                               <div className="relative inline-block mt-1">
+                                 <img
+                                   src={m.file.url}
+                                   alt={m.file.name ?? "image"}
+                                   className="max-w-[300px] rounded-lg cursor-pointer"
+                                   onClick={() => window.open(m.file.url, '_blank')}
+                                 />
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
+                               </div>
+                             ) : m.file.type === "video" ? (
+                               <video
                                  src={m.file.url}
-                                 alt={m.file.name ?? "image"}
-                                 className="max-w-full rounded-md mt-1"
+                                 controls
+                                 className="max-w-[300px] rounded-lg mt-1"
+                                 style={{ borderRadius: '12px' }}
                                />
+                             ) : m.file.type === "video_note" ? (
+                               <VideoNotePlayer src={m.file.url} />
                              ) : m.file.type === "audio" ? (
-                               <audio controls src={m.file.url} className="mt-1 w-full" />
+                               <div className="mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
+                                 <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
+                                   <Play className="h-4 w-4 text-white" />
+                                 </button>
+                                 <div className="flex-1">
+                                   <div className="text-sm font-medium">Audio</div>
+                                   {m.file.duration && (
+                                     <div className="text-xs text-muted-foreground">
+                                       {Math.floor(m.file.duration / 60)}:{(m.file.duration % 60).toString().padStart(2, '0')}
+                                     </div>
+                                   )}
+                                 </div>
+                                 <audio src={m.file.url} />
+                               </div>
                              ) : m.file.type === "document" ? (
-                               <a
-                                 href={m.file.url}
-                                 download={m.file.name}
-                                 className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
-                               >
-                                 📎 {m.file.name ?? "Hujjat"}
-                               </a>
-                             ) : (
-                               <div className="mt-1 rounded-md bg-background/60 border p-2">
-                                 <div className="flex items-center gap-2 text-sm">
-                                   <span className="text-lg">📍</span>
+                               <div className="mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[250px]">
+                                  <a
+                                    href={m.file.url}
+                                    download={m.file.name}
+                                    className="flex items-center justify-center w-10 h-10 bg-primary rounded-full hover:bg-primary/80"
+                                  >
+                                    <ArrowDown className="h-8 w-8 text-white" />
+                                  </a>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium truncate">{m.file.name ?? "File"}</div>
+                                    {m.file.size && (
+                                      <div className="text-xs text-muted-foreground">
+                                        {(m.file.size / 1024 / 1024).toFixed(1)} MB
+                                      </div>
+                                    )}
+                                  </div>
+                               </div>
+                             ) : m.file.type === "location" ? (
+                               <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                                 <div className="flex items-center gap-2">
+                                   <MapPin className="h-5 w-5 text-red-500" />
                                    <div className="flex-1">
-                                     <div className="font-medium">Lokatsiya</div>
-                                     {m.file.name ? (
+                                     <div className="font-medium text-sm">Location</div>
+                                     {m.file.name && (
                                        <div className="text-xs text-muted-foreground">{m.file.name}</div>
-                                     ) : null}
+                                     )}
                                    </div>
                                    <a
                                      href={m.file.url}
@@ -345,15 +401,29 @@ export default function ChatWindow({
                                      rel="noreferrer"
                                      className="text-xs rounded px-2 py-1 border hover:bg-background"
                                    >
-                                     Ko'rish
+                                     View
                                    </a>
                                  </div>
                                </div>
-                             )
+                             ) : m.file.type === "contact" ? (
+                               <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                                 <div className="flex items-center gap-2">
+                                   <User className="h-5 w-5 text-blue-500" />
+                                   <div className="flex-1">
+                                     <div className="font-medium text-sm">
+                                       {m.file.contact?.first_name} {m.file.contact?.last_name || ''}
+                                     </div>
+                                     <div className="text-xs text-muted-foreground">{m.file.contact?.phone_number}</div>
+                                   </div>
+                                 </div>
+                               </div>
+                             ) : null
                            ) : null}
-                           <div className="text-[10px] text-white mt-1">
-                             {new Date(m.at).toLocaleTimeString()}
-                           </div>
+                           {m.file?.type !== 'image' && (
+                             <div className="text-[10px] text-white mt-1">
+                               {new Date(m.at).toLocaleTimeString()}
+                             </div>
+                           )}
                          </div>
                        ))}
                      </div>
@@ -363,43 +433,88 @@ export default function ChatWindow({
                  return group.map((m, messageIndex) => (
                    <div
                      key={m.id}
-                     className={`w-fit max-w-[80%] rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}
+                     className={`w-fit max-w-[80%] ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? '' : `rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}`}
                      ref={isLastGroup && messageIndex === group.length - 1 ? lastMessageRef : null}
                    >
-                     {m.sender !== "me" ? (
+                     {m.sender !== "me" && m.file?.type !== 'video_note' && m.file?.type !== 'image' && m.file?.type !== 'document' ? (
                        <div className="text-xs font-medium text-white mb-1">
                          {m.sender === "them" ? title : m.sender}
                        </div>
                      ) : null}
-                     {m.text ? (
+                     {m.text && m.file?.type !== 'video_note' ? (
                        <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
                      ) : null}
                      {m.file ? (
                        m.file.type === "image" ? (
-                         <img
+                         <div className="relative inline-block mt-1">
+                           <img
+                             src={m.file.url}
+                             alt={m.file.name ?? "image"}
+                             className="max-w-[300px] rounded-lg cursor-pointer"
+                             onClick={() => window.open(m.file.url, '_blank')}
+                           />
+                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                             {new Date(m.at).toLocaleTimeString()}
+                             {isFromMe && m.is_outgoing && (
+                               m.is_read ? (
+                                 <CheckCheck className="h-3 w-3" />
+                               ) : (
+                                 <Check className="h-3 w-3" />
+                               )
+                             )}
+                           </div>
+                         </div>
+                       ) : m.file.type === "video" ? (
+                         <video
                            src={m.file.url}
-                           alt={m.file.name ?? "image"}
-                           className="max-w-full rounded-md mt-1"
+                           controls
+                           className="max-w-[300px] rounded-lg mt-1"
+                           style={{ borderRadius: '12px' }}
                          />
+                       ) : m.file.type === "video_note" ? (
+                         <VideoNotePlayer src={m.file.url} />
                        ) : m.file.type === "audio" ? (
-                         <audio controls src={m.file.url} className="mt-1 w-full" />
+                         <div className="mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
+                           <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
+                             <Play className="h-4 w-4 text-white" />
+                           </button>
+                           <div className="flex-1">
+                             <div className="text-sm font-medium">Audio</div>
+                             {m.file.duration && (
+                               <div className="text-xs text-muted-foreground">
+                                 {Math.floor(m.file.duration / 60)}:{(m.file.duration % 60).toString().padStart(2, '0')}
+                               </div>
+                             )}
+                           </div>
+                           <audio src={m.file.url} />
+                         </div>
                        ) : m.file.type === "document" ? (
-                         <a
-                           href={m.file.url}
-                           download={m.file.name}
-                           className="mt-1 inline-flex items-center gap-2 underline underline-offset-2"
-                         >
-                           📎 {m.file.name ?? "Hujjat"}
-                         </a>
-                       ) : (
-                         <div className="mt-1 rounded-md bg-background/60 border p-2">
-                           <div className="flex items-center gap-2 text-sm">
-                             <span className="text-lg">📍</span>
+                         <div className="mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[250px]">
+                                  <a
+                                    href={m.file.url}
+                                    download={m.file.name}
+                                    className="flex items-center justify-center w-10 h-10 bg-primary rounded-full hover:bg-primary/80"
+                                  >
+                                    <ArrowDown className="h-8 w-8 text-white" />
+                                  </a>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium truncate">{m.file.name ?? "File"}</div>
+                                    {m.file.size && (
+                                      <div className="text-xs text-muted-foreground">
+                                        {(m.file.size / 1024 / 1024).toFixed(1)} MB
+                                      </div>
+                                    )}
+                                  </div>
+                         </div>
+                       ) : m.file.type === "location" ? (
+                         <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                           <div className="flex items-center gap-2">
+                             <MapPin className="h-5 w-5 text-red-500" />
                              <div className="flex-1">
-                               <div className="font-medium">Lokatsiya</div>
-                               {m.file.name ? (
+                               <div className="font-medium text-sm">Location</div>
+                               {m.file.name && (
                                  <div className="text-xs text-muted-foreground">{m.file.name}</div>
-                               ) : null}
+                               )}
                              </div>
                              <a
                                href={m.file.url}
@@ -407,22 +522,36 @@ export default function ChatWindow({
                                rel="noreferrer"
                                className="text-xs rounded px-2 py-1 border hover:bg-background"
                              >
-                               Ko'rish
+                               View
                              </a>
                            </div>
                          </div>
-                       )
+                       ) : m.file.type === "contact" ? (
+                         <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                           <div className="flex items-center gap-2">
+                             <User className="h-5 w-5 text-blue-500" />
+                             <div className="flex-1">
+                               <div className="font-medium text-sm">
+                                 {m.file.contact?.first_name} {m.file.contact?.last_name || ''}
+                               </div>
+                               <div className="text-xs text-muted-foreground">{m.file.contact?.phone_number}</div>
+                             </div>
+                           </div>
+                         </div>
+                       ) : null
                      ) : null}
-                     <div className="text-[10px] text-white mt-1 flex items-center gap-1">
-                       {new Date(m.at).toLocaleTimeString()}
-                       {isFromMe && m.is_outgoing && (
-                         m.is_read ? (
-                           <CheckCheck className="h-3 w-3" />
-                         ) : (
-                           <Check className="h-3 w-3" />
-                         )
-                       )}
-                     </div>
+                     {m.file?.type !== 'image' && (
+                       <div className="text-[10px] text-white mt-1 flex items-center gap-1">
+                         {new Date(m.at).toLocaleTimeString()}
+                         {isFromMe && m.is_outgoing && (
+                           m.is_read ? (
+                             <CheckCheck className="h-3 w-3" />
+                           ) : (
+                             <Check className="h-3 w-3" />
+                           )
+                         )}
+                       </div>
+                     )}
                    </div>
                  ));
                }
@@ -441,3 +570,11 @@ export default function ChatWindow({
     </div>
   );
 }
+
+
+
+
+
+
+
+

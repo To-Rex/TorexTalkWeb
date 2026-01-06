@@ -105,6 +105,7 @@ export interface MessageItem {
   caption: string | null;
   media_type: string | null;
   file_id: string | null;
+  file_url: string | null;
   file_name: string | null;
   mime_type: string | null;
   is_read: boolean;
