@@ -86,7 +86,7 @@ export default function VideoNotePlayer({ src }: VideoNotePlayerProps) {
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="relative w-48 h-48">
+    <div className="relative w-56 h-56">
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
         <circle
           cx="50"

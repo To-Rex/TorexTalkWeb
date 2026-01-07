@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/auth";
-import { ArrowLeft, Check, CheckCheck, Loader2, MapPin, User, Play, ArrowDown } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Loader2, MapPin, User, Play, ArrowDown, X, Download, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import VideoNotePlayer from "./VideoNotePlayer";
 
 export interface FileAttachment {
@@ -70,6 +71,18 @@ export default function ChatWindow({
   const [isAdjustingScroll, setIsAdjustingScroll] = useState<boolean>(false);
   const isAdjustingScrollRef = useRef(isAdjustingScroll);
   const isLoadingMoreRef = useRef(isLoadingMore);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name?: string } | null>(null);
+  const [scale, setScale] = useState<number>(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [startPan, setStartPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (selectedImage) {
+      setScale(1);
+      setPan({ x: 0, y: 0 });
+    }
+  }, [selectedImage]);
 
   useEffect(() => {
     isAdjustingScrollRef.current = isAdjustingScroll;
@@ -313,13 +326,13 @@ export default function ChatWindow({
                        )}
                      </div>
                      <div className="flex flex-col max-w-[80%]">
-                       {firstMessage.file?.type !== 'video_note' && firstMessage.file?.type !== 'image' && (
+                       {firstMessage.file && firstMessage.file.type !== 'video_note' && firstMessage.file.type !== 'image' && (
                          <div className="text-xs font-medium text-muted-foreground mb-1">
                            {firstMessage.sender === "them" ? title : firstMessage.sender}
                          </div>
                        )}
                        {group.map((m) => (
-                         <div key={m.id} className={`w-fit mb-1 ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? '' : 'rounded-lg px-3 py-2 text-sm text-white bg-secondary'}`}>
+                         <div key={m.id} className={`w-fit mb-1 ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? '' : 'relative rounded-lg px-3 py-2 text-sm text-white bg-secondary'}`}>
                            {m.text && m.file?.type !== 'video_note' ? (
                              <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
                            ) : null}
@@ -330,7 +343,7 @@ export default function ChatWindow({
                                    src={m.file.url}
                                    alt={m.file.name ?? "image"}
                                    className="max-w-[300px] rounded-lg cursor-pointer"
-                                   onClick={() => window.open(m.file.url, '_blank')}
+                                   onClick={() => setSelectedImage({ url: m.file.url, name: m.file.name })}
                                  />
                                  <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
                                    {new Date(m.at).toLocaleTimeString()}
@@ -344,16 +357,40 @@ export default function ChatWindow({
                                  </div>
                                </div>
                              ) : m.file.type === "video" ? (
-                               <video
-                                 src={m.file.url}
-                                 controls
-                                 className="max-w-[300px] rounded-lg mt-1"
-                                 style={{ borderRadius: '12px' }}
-                               />
+                               <div className="relative mt-1 inline-block">
+                                 <video
+                                   src={m.file.url}
+                                   controls
+                                   className="max-w-[300px] rounded-lg"
+                                   style={{ borderRadius: '12px' }}
+                                 />
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
+                               </div>
                              ) : m.file.type === "video_note" ? (
-                               <VideoNotePlayer src={m.file.url} />
+                               <div className="relative inline-block">
+                                 <VideoNotePlayer src={m.file.url} />
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
+                               </div>
                              ) : m.file.type === "audio" ? (
-                               <div className="mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
+                               <div className="relative mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
                                  <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
                                    <Play className="h-4 w-4 text-white" />
                                  </button>
@@ -366,9 +403,19 @@ export default function ChatWindow({
                                    )}
                                  </div>
                                  <audio src={m.file.url} />
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
                                </div>
                              ) : m.file.type === "document" ? (
-                               <div className="mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[250px]">
+                               <div className="relative mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[350px]">
                                   <a
                                     href={m.file.url}
                                     download={m.file.name}
@@ -384,9 +431,19 @@ export default function ChatWindow({
                                       </div>
                                     )}
                                   </div>
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
                                </div>
                              ) : m.file.type === "location" ? (
-                               <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                               <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
                                  <div className="flex items-center gap-2">
                                    <MapPin className="h-5 w-5 text-red-500" />
                                    <div className="flex-1">
@@ -404,9 +461,19 @@ export default function ChatWindow({
                                      View
                                    </a>
                                  </div>
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
                                </div>
                              ) : m.file.type === "contact" ? (
-                               <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                               <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
                                  <div className="flex items-center gap-2">
                                    <User className="h-5 w-5 text-blue-500" />
                                    <div className="flex-1">
@@ -416,12 +483,29 @@ export default function ChatWindow({
                                      <div className="text-xs text-muted-foreground">{m.file.contact?.phone_number}</div>
                                    </div>
                                  </div>
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
                                </div>
                              ) : null
                            ) : null}
-                           {m.file?.type !== 'image' && (
-                             <div className="text-[10px] text-white mt-1">
+                           {!m.file && (
+                             <div className="text-[10px] text-white mt-1 text-right flex justify-end items-center gap-1">
                                {new Date(m.at).toLocaleTimeString()}
+                               {isFromMe && m.is_outgoing && (
+                                 m.is_read ? (
+                                   <CheckCheck className="h-3 w-3" />
+                                 ) : (
+                                   <Check className="h-3 w-3" />
+                                 )
+                               )}
                              </div>
                            )}
                          </div>
@@ -433,10 +517,10 @@ export default function ChatWindow({
                  return group.map((m, messageIndex) => (
                    <div
                      key={m.id}
-                     className={`w-fit max-w-[80%] ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? '' : `rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}`}
+                     className={`w-fit max-w-[80%] ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? (isFromMe ? 'ml-auto' : '') : `relative rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}`}
                      ref={isLastGroup && messageIndex === group.length - 1 ? lastMessageRef : null}
                    >
-                     {m.sender !== "me" && m.file?.type !== 'video_note' && m.file?.type !== 'image' && m.file?.type !== 'document' ? (
+                     {m.sender !== "me" && m.file && m.file.type !== 'video_note' && m.file.type !== 'image' && m.file.type !== 'document' ? (
                        <div className="text-xs font-medium text-white mb-1">
                          {m.sender === "them" ? title : m.sender}
                        </div>
@@ -451,7 +535,7 @@ export default function ChatWindow({
                              src={m.file.url}
                              alt={m.file.name ?? "image"}
                              className="max-w-[300px] rounded-lg cursor-pointer"
-                             onClick={() => window.open(m.file.url, '_blank')}
+                             onClick={() => setSelectedImage({ url: m.file.url, name: m.file.name })}
                            />
                            <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
                              {new Date(m.at).toLocaleTimeString()}
@@ -465,16 +549,40 @@ export default function ChatWindow({
                            </div>
                          </div>
                        ) : m.file.type === "video" ? (
-                         <video
-                           src={m.file.url}
-                           controls
-                           className="max-w-[300px] rounded-lg mt-1"
-                           style={{ borderRadius: '12px' }}
-                         />
+                         <div className="relative mt-1 inline-block">
+                           <video
+                             src={m.file.url}
+                             controls
+                             className="max-w-[300px] rounded-lg"
+                             style={{ borderRadius: '12px' }}
+                           />
+                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                             {new Date(m.at).toLocaleTimeString()}
+                             {isFromMe && m.is_outgoing && (
+                               m.is_read ? (
+                                 <CheckCheck className="h-3 w-3" />
+                               ) : (
+                                 <Check className="h-3 w-3" />
+                               )
+                             )}
+                           </div>
+                         </div>
                        ) : m.file.type === "video_note" ? (
-                         <VideoNotePlayer src={m.file.url} />
+                         <div className="relative inline-block">
+                           <VideoNotePlayer src={m.file.url} />
+                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                             {new Date(m.at).toLocaleTimeString()}
+                             {isFromMe && m.is_outgoing && (
+                               m.is_read ? (
+                                 <CheckCheck className="h-3 w-3" />
+                               ) : (
+                                 <CheckCheck className="h-3 w-3" />
+                               )
+                             )}
+                           </div>
+                         </div>
                        ) : m.file.type === "audio" ? (
-                         <div className="mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
+                         <div className="relative mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
                            <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
                              <Play className="h-4 w-4 text-white" />
                            </button>
@@ -487,9 +595,19 @@ export default function ChatWindow({
                              )}
                            </div>
                            <audio src={m.file.url} />
+                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                             {new Date(m.at).toLocaleTimeString()}
+                             {isFromMe && m.is_outgoing && (
+                               m.is_read ? (
+                                 <CheckCheck className="h-3 w-3" />
+                               ) : (
+                                 <Check className="h-3 w-3" />
+                               )
+                             )}
+                           </div>
                          </div>
                        ) : m.file.type === "document" ? (
-                         <div className="mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[250px]">
+                         <div className="relative mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[350px]">
                                   <a
                                     href={m.file.url}
                                     download={m.file.name}
@@ -505,9 +623,19 @@ export default function ChatWindow({
                                       </div>
                                     )}
                                   </div>
+                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                                   {new Date(m.at).toLocaleTimeString()}
+                                   {isFromMe && m.is_outgoing && (
+                                     m.is_read ? (
+                                       <CheckCheck className="h-3 w-3" />
+                                     ) : (
+                                       <Check className="h-3 w-3" />
+                                     )
+                                   )}
+                                 </div>
                          </div>
                        ) : m.file.type === "location" ? (
-                         <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                         <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
                            <div className="flex items-center gap-2">
                              <MapPin className="h-5 w-5 text-red-500" />
                              <div className="flex-1">
@@ -525,9 +653,19 @@ export default function ChatWindow({
                                View
                              </a>
                            </div>
+                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                             {new Date(m.at).toLocaleTimeString()}
+                             {isFromMe && m.is_outgoing && (
+                               m.is_read ? (
+                                 <CheckCheck className="h-3 w-3" />
+                               ) : (
+                                 <Check className="h-3 w-3" />
+                               )
+                             )}
+                           </div>
                          </div>
                        ) : m.file.type === "contact" ? (
-                         <div className="mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+                         <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
                            <div className="flex items-center gap-2">
                              <User className="h-5 w-5 text-blue-500" />
                              <div className="flex-1">
@@ -537,17 +675,27 @@ export default function ChatWindow({
                                <div className="text-xs text-muted-foreground">{m.file.contact?.phone_number}</div>
                              </div>
                            </div>
+                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                             {new Date(m.at).toLocaleTimeString()}
+                             {isFromMe && m.is_outgoing && (
+                               m.is_read ? (
+                                 <CheckCheck className="h-3 w-3" />
+                               ) : (
+                                 <Check className="h-3 w-3" />
+                               )
+                             )}
+                           </div>
                          </div>
                        ) : null
                      ) : null}
-                     {m.file?.type !== 'image' && (
-                       <div className="text-[10px] text-white mt-1 flex items-center gap-1">
+                     {!m.file && (
+                       <div className="text-[10px] text-white mt-1 text-right flex justify-end items-center gap-1">
                          {new Date(m.at).toLocaleTimeString()}
                          {isFromMe && m.is_outgoing && (
                            m.is_read ? (
                              <CheckCheck className="h-3 w-3" />
                            ) : (
-                             <Check className="h-3 w-3" />
+                             <CheckCheck className="h-3 w-3" />
                            )
                          )}
                        </div>
@@ -567,6 +715,80 @@ export default function ChatWindow({
            </div>
          )}
        </div>
+       {selectedImage && (
+         <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+           <DialogContent className="p-0 flex items-center justify-center max-w-[90vw] !bg-transparent border-none shadow-none [&>button]:hidden">
+             <div className="relative inline-block">
+               <img
+                 src={selectedImage.url}
+                 alt="Image"
+                 className="max-w-[90vw] max-h-[90vh] object-contain"
+                 style={{
+                   transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                   cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                   transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                 }}
+                 onWheel={(e) => {
+                   e.preventDefault();
+                   setScale(s => e.deltaY < 0 ? Math.min(s * 1.1, 3) : Math.max(s / 1.1, 0.5));
+                 }}
+                 onMouseDown={(e) => {
+                   if (scale > 1) {
+                     setIsDragging(true);
+                     setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+                   }
+                 }}
+                 onMouseMove={(e) => {
+                   if (isDragging) {
+                     setPan({ x: e.clientX - startPan.x, y: e.clientY - startPan.y });
+                   }
+                 }}
+                 onMouseUp={() => setIsDragging(false)}
+                 onMouseLeave={() => setIsDragging(false)}
+               />
+               <div className="absolute top-0 right-0 z-10 p-4 flex gap-2">
+                 <button
+                   onClick={() => setScale(s => Math.max(s / 1.2, 0.5))}
+                   className="p-2 bg-black/50 text-white rounded hover:bg-black/70"
+                   title="Zoom out"
+                 >
+                   <ZoomOut className="h-4 w-4" />
+                 </button>
+                 <button
+                   onClick={() => setScale(s => Math.min(s * 1.2, 3))}
+                   className="p-2 bg-black/50 text-white rounded hover:bg-black/70"
+                   title="Zoom in"
+                 >
+                   <ZoomIn className="h-4 w-4" />
+                 </button>
+                 <button
+                   onClick={async () => {
+                     try {
+                       const res = await fetch(selectedImage.url);
+                       const blob = await res.blob();
+                       const url = URL.createObjectURL(blob);
+                       const link = document.createElement('a');
+                       link.href = url;
+                       link.download = selectedImage.name ?? 'image.jpg';
+                       link.click();
+                       URL.revokeObjectURL(url);
+                     } catch (e) {
+                       console.error('Download failed', e);
+                     }
+                   }}
+                   className="p-2 bg-black/50 text-white rounded hover:bg-black/70"
+                   title="Download image"
+                 >
+                   <Download className="h-4 w-4" />
+                 </button>
+                 <DialogClose className="p-2 bg-black/50 text-white rounded hover:bg-black/70">
+                   <X className="h-4 w-4" />
+                 </DialogClose>
+               </div>
+             </div>
+           </DialogContent>
+         </Dialog>
+       )}
     </div>
   );
 }
