@@ -657,6 +657,7 @@ export default function AppDashboard() {
                 url: item.file_url ? `${baseUrl}${item.file_url}` : item.file_id ? `${baseUrl}${item.file_id}` : "",
                 name: item.file_name || undefined,
                 mime_type: item.mime_type || undefined,
+                thumb_url: item.thumb_url ? `${baseUrl}${item.thumb_url}` : undefined,
               };
             }
             return {
@@ -721,6 +722,7 @@ export default function AppDashboard() {
               url: item.file_id || "",
               name: item.file_name || undefined,
               mime_type: item.mime_type || undefined,
+              thumb_url: item.thumb_url ? `${baseUrl}${item.thumb_url}` : undefined,
             };
           }
           return {
@@ -761,7 +763,10 @@ export default function AppDashboard() {
   const send = (payload: {
     text?: string;
     attachment?:
-      | { type: "image" | "audio" | "document"; file: File }
+      | { type: "image"; file: File }
+      | { type: "image"; url: string; name?: string }
+      | { type: "audio"; file: File }
+      | { type: "document"; file: File }
       | { type: "location"; url: string; name?: string };
   }) => {
     if (!currentId) return;
@@ -769,34 +774,31 @@ export default function AppDashboard() {
       ...prev,
       [currentId]: [
         ...(prev[currentId] ?? []),
-        payload.attachment
-          ? "file" in payload.attachment
-            ? {
-                id: Math.random().toString(36).slice(2),
-                sender: "me",
-                at: Date.now(),
-                file: {
+        {
+          id: Math.random().toString(36).slice(2),
+          sender: "me",
+          text: payload.text,
+          at: Date.now(),
+          file: payload.attachment
+            ? "file" in payload.attachment
+              ? {
                   type: payload.attachment.type,
                   url: URL.createObjectURL(payload.attachment.file),
                   name: payload.attachment.file.name,
-                },
-              }
-            : {
-                id: Math.random().toString(36).slice(2),
-                sender: "me",
-                at: Date.now(),
-                file: {
+                }
+              : "url" in payload.attachment && payload.attachment.type === "image"
+              ? {
+                  type: "image",
+                  url: payload.attachment.url,
+                  name: payload.attachment.name,
+                }
+              : {
                   type: "location",
                   url: payload.attachment.url,
                   name: payload.attachment.name,
-                },
-              }
-          : {
-              id: Math.random().toString(36).slice(2),
-              sender: "me",
-              text: payload.text ?? "",
-              at: Date.now(),
-            },
+                }
+            : undefined,
+        },
       ],
     }));
   };

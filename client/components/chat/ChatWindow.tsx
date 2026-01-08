@@ -5,14 +5,16 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import VideoNotePlayer from "./VideoNotePlayer";
+import { apiService } from "@/lib/api";
 
 export interface FileAttachment {
-  type: "image" | "audio" | "document" | "location" | "video" | "video_note" | "contact";
+  type: "image" | "audio" | "document" | "location" | "video" | "video_note" | "contact" | "voice";
   url: string;
   name?: string;
   size?: number;
   duration?: number;
   mime_type?: string;
+  thumb_url?: string;
   contact?: {
     first_name: string;
     last_name?: string;
@@ -76,6 +78,8 @@ export default function ChatWindow({
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [startPan, setStartPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [mediaUrls, setMediaUrls] = useState<Map<string, string>>(new Map());
+  const downloadedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (selectedImage) {
@@ -191,12 +195,371 @@ export default function ChatWindow({
     setAutoReply(val === "1");
   }, [user, title]);
 
+
   const toggleAuto = () => {
     if (!user) return;
     const key = `tt_ar_${user.email}_${title}`;
     const next = !autoReply;
     setAutoReply(next);
     localStorage.setItem(key, next ? "1" : "0");
+  };
+
+  const renderFile = (m: Message, isFromMe: boolean) => {
+    if (!m.file) return null;
+    const isLoaded = mediaUrls.has(m.file.url) || m.file.url.startsWith('/');
+    switch (m.file.type) {
+      case "image":
+        if (!isLoaded) {
+          return (
+            <div className="relative inline-block mt-1">
+              <img
+                src={m.file.thumb_url || "/placeholder.svg"}
+                alt="image"
+                className="max-w-[300px] rounded-lg"
+              />
+              <div
+                className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center cursor-pointer"
+                onClick={async () => {
+                  try {
+                    const url = await apiService.downloadMedia(1, m.file.url, 'photo');
+                    setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                    setSelectedImage({ url, name: m.file.name });
+                  } catch (e) {
+                    console.error('Download failed', e);
+                  }
+                }}
+              >
+                <div className="bg-black/50 rounded-full p-2">
+                  <ArrowDown className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                {new Date(m.at).toLocaleTimeString()}
+                {isFromMe && m.is_outgoing && (
+                  m.is_read ? (
+                    <CheckCheck className="h-3 w-3" />
+                  ) : (
+                    <Check className="h-3 w-3" />
+                  )
+                )}
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="relative inline-block mt-1">
+              <img
+                src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '/placeholder.svg')}
+                alt={m.file.name ?? "image"}
+                className="max-w-[300px] rounded-lg cursor-pointer"
+                onClick={async () => {
+                  let url = mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : null);
+                  if (!url) {
+                    try {
+                      url = await apiService.downloadMedia(1, m.file.url, 'photo');
+                      setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                    } catch (e) {
+                      console.error('Download failed', e);
+                      return;
+                    }
+                  }
+                  setSelectedImage({ url, name: m.file.name });
+                }}
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                  (e.target as HTMLElement).parentNode?.querySelector('.error-placeholder')?.setAttribute('style', 'display: flex;');
+                }}
+              />
+              <div className="error-placeholder hidden items-center justify-center w-full h-32 bg-muted rounded-lg text-muted-foreground text-sm">
+                Image not available
+              </div>
+              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                {new Date(m.at).toLocaleTimeString()}
+                {isFromMe && m.is_outgoing && (
+                  m.is_read ? (
+                    <CheckCheck className="h-3 w-3" />
+                  ) : (
+                    <Check className="h-3 w-3" />
+                  )
+                )}
+              </div>
+            </div>
+          );
+        }
+      case "video":
+        if (!isLoaded) {
+          return (
+            <div className="relative mt-1 inline-block">
+              <div
+                className="max-w-[300px] h-48 bg-muted rounded-lg flex items-center justify-center cursor-pointer"
+                style={m.file.thumb_url ? { backgroundImage: `url(${m.file.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                onClick={async () => {
+                  try {
+                    const url = await apiService.downloadMedia(1, m.file.url, 'video');
+                    setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                  } catch (e) {
+                    console.error('Download failed', e);
+                  }
+                }}
+              >
+                {!m.file.thumb_url && <ArrowDown className="h-8 w-8 text-muted-foreground" />}
+                {m.file.thumb_url && <Play className="h-8 w-8 text-white drop-shadow-lg" />}
+              </div>
+              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                {new Date(m.at).toLocaleTimeString()}
+                {isFromMe && m.is_outgoing && (
+                  m.is_read ? (
+                    <CheckCheck className="h-3 w-3" />
+                  ) : (
+                    <Check className="h-3 w-3" />
+                  )
+                )}
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="relative mt-1 inline-block">
+              <video
+                src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '')}
+                controls
+                className="max-w-[300px] rounded-lg"
+                style={{ borderRadius: '12px' }}
+                onPlay={async () => {
+                  if (!mediaUrls.get(m.file.url) && !m.file.url.startsWith('/')) {
+                    try {
+                      const url = await apiService.downloadMedia(1, m.file.url, 'video');
+                      setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                    } catch (e) {
+                      console.error('Download failed', e);
+                    }
+                  }
+                }}
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                  (e.target as HTMLElement).parentNode?.querySelector('.error-placeholder')?.setAttribute('style', 'display: flex;');
+                }}
+              />
+              <div className="error-placeholder hidden items-center justify-center w-full h-32 bg-muted rounded-lg text-muted-foreground text-sm">
+                Video not available
+              </div>
+              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                {new Date(m.at).toLocaleTimeString()}
+                {isFromMe && m.is_outgoing && (
+                  m.is_read ? (
+                    <CheckCheck className="h-3 w-3" />
+                  ) : (
+                    <Check className="h-3 w-3" />
+                  )
+                )}
+              </div>
+            </div>
+          );
+        }
+      case "video_note":
+        if (!isLoaded) {
+          return (
+            <div className="relative inline-block">
+              <div
+                className="w-56 h-56 bg-muted rounded-full flex items-center justify-center cursor-pointer"
+                style={m.file.thumb_url ? { backgroundImage: `url(${m.file.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                onClick={async () => {
+                  try {
+                    const url = await apiService.downloadMedia(1, m.file.url, 'video_note');
+                    setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                  } catch (e) {
+                    console.error('Download failed', e);
+                  }
+                }}
+              >
+                <div className="bg-black/50 rounded-full p-2">
+                  <ArrowDown className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                {new Date(m.at).toLocaleTimeString()}
+                {isFromMe && m.is_outgoing && (
+                  m.is_read ? (
+                    <CheckCheck className="h-3 w-3" />
+                  ) : (
+                    <CheckCheck className="h-3 w-3" />
+                  )
+                )}
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="relative inline-block">
+              <VideoNotePlayer src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '')} />
+              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+                {new Date(m.at).toLocaleTimeString()}
+                {isFromMe && m.is_outgoing && (
+                  m.is_read ? (
+                    <CheckCheck className="h-3 w-3" />
+                  ) : (
+                    <CheckCheck className="h-3 w-3" />
+                  )
+                )}
+              </div>
+            </div>
+          );
+        }
+      case "audio":
+      case "voice":
+        return (
+          <div className="relative mt-1 flex items-center gap-2 p-2 max-w-[250px]">
+            <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
+              <Play className="h-4 w-4 text-white" />
+            </button>
+            <button
+              onClick={async () => {
+                if (!mediaUrls.get(m.file.url) && !m.file.url.startsWith('/')) {
+                  try {
+                    const url = await apiService.downloadMedia(1, m.file.url, 'voice');
+                    setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                  } catch (e) {
+                    console.error('Download failed', e);
+                  }
+                }
+              }}
+              className="flex items-center justify-center w-8 h-8 bg-primary rounded-full hover:bg-primary/80"
+            >
+              <Download className="h-4 w-4 text-white" />
+            </button>
+            <div className="flex-1">
+              {m.file.duration && (
+                <div className="text-sm text-muted-foreground">
+                  {Math.floor(m.file.duration / 60)}:{(m.file.duration % 60).toString().padStart(2, '0')}
+                </div>
+              )}
+            </div>
+            <audio src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '')} onPlay={async () => {
+              if (!mediaUrls.get(m.file.url) && !m.file.url.startsWith('/')) {
+                try {
+                  const url = await apiService.downloadMedia(1, m.file.url, 'voice');
+                  setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                } catch (e) {
+                  console.error('Download failed', e);
+                }
+              }
+            }} onError={(e) => {
+              (e.target as HTMLElement).style.display = 'none';
+              (e.target as HTMLElement).parentNode?.querySelector('.error-placeholder')?.setAttribute('style', 'display: flex;');
+            }} />
+            <div className="error-placeholder hidden items-center justify-center w-full h-8 bg-muted rounded text-muted-foreground text-sm">
+              Audio not available
+            </div>
+            <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+              {new Date(m.at).toLocaleTimeString()}
+              {isFromMe && m.is_outgoing && (
+                m.is_read ? (
+                  <CheckCheck className="h-3 w-3" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )
+              )}
+            </div>
+          </div>
+        );
+      case "document":
+        return (
+          <div className="relative mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[350px]">
+            <button
+              onClick={async () => {
+                try {
+                  const url = await apiService.downloadMedia(1, m.file.url, 'document');
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = m.file.name ?? 'file';
+                  link.click();
+                } catch (e) {
+                  console.error('Download failed', e);
+                }
+              }}
+              className="flex items-center justify-center w-10 h-10 bg-primary rounded-full hover:bg-primary/80"
+            >
+              <ArrowDown className="h-8 w-8 text-white" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium truncate">{m.file.name ?? "File"}</div>
+              {m.file.size && (
+                <div className="text-xs text-muted-foreground">
+                  {(m.file.size / 1024 / 1024).toFixed(1)} MB
+                </div>
+              )}
+            </div>
+            <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+              {new Date(m.at).toLocaleTimeString()}
+              {isFromMe && m.is_outgoing && (
+                m.is_read ? (
+                  <CheckCheck className="h-3 w-3" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )
+              )}
+            </div>
+          </div>
+        );
+      case "location":
+        return (
+          <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-red-500" />
+              <div className="flex-1">
+                <div className="font-medium text-sm">Location</div>
+                {m.file.name && (
+                  <div className="text-xs text-muted-foreground">{m.file.name}</div>
+                )}
+              </div>
+              <a
+                href={m.file.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs rounded px-2 py-1 border hover:bg-background"
+              >
+                View
+              </a>
+            </div>
+            <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+              {new Date(m.at).toLocaleTimeString()}
+              {isFromMe && m.is_outgoing && (
+                m.is_read ? (
+                  <CheckCheck className="h-3 w-3" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )
+              )}
+            </div>
+          </div>
+        );
+      case "contact":
+        return (
+          <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
+            <div className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-500" />
+              <div className="flex-1">
+                <div className="font-medium text-sm">
+                  {m.file.contact?.first_name} {m.file.contact?.last_name || ''}
+                </div>
+                <div className="text-xs text-muted-foreground">{m.file.contact?.phone_number}</div>
+              </div>
+            </div>
+            <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+              {new Date(m.at).toLocaleTimeString()}
+              {isFromMe && m.is_outgoing && (
+                m.is_read ? (
+                  <CheckCheck className="h-3 w-3" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )
+              )}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -336,166 +699,7 @@ export default function ChatWindow({
                            {m.text && m.file?.type !== 'video_note' ? (
                              <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
                            ) : null}
-                           {m.file ? (
-                             m.file.type === "image" ? (
-                               <div className="relative inline-block mt-1">
-                                 <img
-                                   src={m.file.url}
-                                   alt={m.file.name ?? "image"}
-                                   className="max-w-[300px] rounded-lg cursor-pointer"
-                                   onClick={() => setSelectedImage({ url: m.file.url, name: m.file.name })}
-                                 />
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                               </div>
-                             ) : m.file.type === "video" ? (
-                               <div className="relative mt-1 inline-block">
-                                 <video
-                                   src={m.file.url}
-                                   controls
-                                   className="max-w-[300px] rounded-lg"
-                                   style={{ borderRadius: '12px' }}
-                                 />
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                               </div>
-                             ) : m.file.type === "video_note" ? (
-                               <div className="relative inline-block">
-                                 <VideoNotePlayer src={m.file.url} />
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                               </div>
-                             ) : m.file.type === "audio" ? (
-                               <div className="relative mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
-                                 <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
-                                   <Play className="h-4 w-4 text-white" />
-                                 </button>
-                                 <div className="flex-1">
-                                   <div className="text-sm font-medium">Audio</div>
-                                   {m.file.duration && (
-                                     <div className="text-xs text-muted-foreground">
-                                       {Math.floor(m.file.duration / 60)}:{(m.file.duration % 60).toString().padStart(2, '0')}
-                                     </div>
-                                   )}
-                                 </div>
-                                 <audio src={m.file.url} />
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                               </div>
-                             ) : m.file.type === "document" ? (
-                               <div className="relative mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[350px]">
-                                  <a
-                                    href={m.file.url}
-                                    download={m.file.name}
-                                    className="flex items-center justify-center w-10 h-10 bg-primary rounded-full hover:bg-primary/80"
-                                  >
-                                    <ArrowDown className="h-8 w-8 text-white" />
-                                  </a>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium truncate">{m.file.name ?? "File"}</div>
-                                    {m.file.size && (
-                                      <div className="text-xs text-muted-foreground">
-                                        {(m.file.size / 1024 / 1024).toFixed(1)} MB
-                                      </div>
-                                    )}
-                                  </div>
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                               </div>
-                             ) : m.file.type === "location" ? (
-                               <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
-                                 <div className="flex items-center gap-2">
-                                   <MapPin className="h-5 w-5 text-red-500" />
-                                   <div className="flex-1">
-                                     <div className="font-medium text-sm">Location</div>
-                                     {m.file.name && (
-                                       <div className="text-xs text-muted-foreground">{m.file.name}</div>
-                                     )}
-                                   </div>
-                                   <a
-                                     href={m.file.url}
-                                     target="_blank"
-                                     rel="noreferrer"
-                                     className="text-xs rounded px-2 py-1 border hover:bg-background"
-                                   >
-                                     View
-                                   </a>
-                                 </div>
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                               </div>
-                             ) : m.file.type === "contact" ? (
-                               <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
-                                 <div className="flex items-center gap-2">
-                                   <User className="h-5 w-5 text-blue-500" />
-                                   <div className="flex-1">
-                                     <div className="font-medium text-sm">
-                                       {m.file.contact?.first_name} {m.file.contact?.last_name || ''}
-                                     </div>
-                                     <div className="text-xs text-muted-foreground">{m.file.contact?.phone_number}</div>
-                                   </div>
-                                 </div>
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                               </div>
-                             ) : null
-                           ) : null}
+                           {renderFile(m, isFromMe)}
                            {!m.file && (
                              <div className="text-[10px] text-white mt-1 text-right flex justify-end items-center gap-1">
                                {new Date(m.at).toLocaleTimeString()}
@@ -528,166 +732,7 @@ export default function ChatWindow({
                      {m.text && m.file?.type !== 'video_note' ? (
                        <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
                      ) : null}
-                     {m.file ? (
-                       m.file.type === "image" ? (
-                         <div className="relative inline-block mt-1">
-                           <img
-                             src={m.file.url}
-                             alt={m.file.name ?? "image"}
-                             className="max-w-[300px] rounded-lg cursor-pointer"
-                             onClick={() => setSelectedImage({ url: m.file.url, name: m.file.name })}
-                           />
-                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                             {new Date(m.at).toLocaleTimeString()}
-                             {isFromMe && m.is_outgoing && (
-                               m.is_read ? (
-                                 <CheckCheck className="h-3 w-3" />
-                               ) : (
-                                 <Check className="h-3 w-3" />
-                               )
-                             )}
-                           </div>
-                         </div>
-                       ) : m.file.type === "video" ? (
-                         <div className="relative mt-1 inline-block">
-                           <video
-                             src={m.file.url}
-                             controls
-                             className="max-w-[300px] rounded-lg"
-                             style={{ borderRadius: '12px' }}
-                           />
-                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                             {new Date(m.at).toLocaleTimeString()}
-                             {isFromMe && m.is_outgoing && (
-                               m.is_read ? (
-                                 <CheckCheck className="h-3 w-3" />
-                               ) : (
-                                 <Check className="h-3 w-3" />
-                               )
-                             )}
-                           </div>
-                         </div>
-                       ) : m.file.type === "video_note" ? (
-                         <div className="relative inline-block">
-                           <VideoNotePlayer src={m.file.url} />
-                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                             {new Date(m.at).toLocaleTimeString()}
-                             {isFromMe && m.is_outgoing && (
-                               m.is_read ? (
-                                 <CheckCheck className="h-3 w-3" />
-                               ) : (
-                                 <CheckCheck className="h-3 w-3" />
-                               )
-                             )}
-                           </div>
-                         </div>
-                       ) : m.file.type === "audio" ? (
-                         <div className="relative mt-1 flex items-center gap-2 bg-secondary/50 rounded-lg p-2 max-w-[250px]">
-                           <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
-                             <Play className="h-4 w-4 text-white" />
-                           </button>
-                           <div className="flex-1">
-                             <div className="text-sm font-medium">Audio</div>
-                             {m.file.duration && (
-                               <div className="text-xs text-muted-foreground">
-                                 {Math.floor(m.file.duration / 60)}:{(m.file.duration % 60).toString().padStart(2, '0')}
-                               </div>
-                             )}
-                           </div>
-                           <audio src={m.file.url} />
-                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                             {new Date(m.at).toLocaleTimeString()}
-                             {isFromMe && m.is_outgoing && (
-                               m.is_read ? (
-                                 <CheckCheck className="h-3 w-3" />
-                               ) : (
-                                 <Check className="h-3 w-3" />
-                               )
-                             )}
-                           </div>
-                         </div>
-                       ) : m.file.type === "document" ? (
-                         <div className="relative mt-1 flex items-center gap-3 bg-secondary/50 rounded-lg p-3 max-w-[350px]">
-                                  <a
-                                    href={m.file.url}
-                                    download={m.file.name}
-                                    className="flex items-center justify-center w-10 h-10 bg-primary rounded-full hover:bg-primary/80"
-                                  >
-                                    <ArrowDown className="h-8 w-8 text-white" />
-                                  </a>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium truncate">{m.file.name ?? "File"}</div>
-                                    {m.file.size && (
-                                      <div className="text-xs text-muted-foreground">
-                                        {(m.file.size / 1024 / 1024).toFixed(1)} MB
-                                      </div>
-                                    )}
-                                  </div>
-                                 <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                                   {new Date(m.at).toLocaleTimeString()}
-                                   {isFromMe && m.is_outgoing && (
-                                     m.is_read ? (
-                                       <CheckCheck className="h-3 w-3" />
-                                     ) : (
-                                       <Check className="h-3 w-3" />
-                                     )
-                                   )}
-                                 </div>
-                         </div>
-                       ) : m.file.type === "location" ? (
-                         <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
-                           <div className="flex items-center gap-2">
-                             <MapPin className="h-5 w-5 text-red-500" />
-                             <div className="flex-1">
-                               <div className="font-medium text-sm">Location</div>
-                               {m.file.name && (
-                                 <div className="text-xs text-muted-foreground">{m.file.name}</div>
-                               )}
-                             </div>
-                             <a
-                               href={m.file.url}
-                               target="_blank"
-                               rel="noreferrer"
-                               className="text-xs rounded px-2 py-1 border hover:bg-background"
-                             >
-                               View
-                             </a>
-                           </div>
-                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                             {new Date(m.at).toLocaleTimeString()}
-                             {isFromMe && m.is_outgoing && (
-                               m.is_read ? (
-                                 <CheckCheck className="h-3 w-3" />
-                               ) : (
-                                 <Check className="h-3 w-3" />
-                               )
-                             )}
-                           </div>
-                         </div>
-                       ) : m.file.type === "contact" ? (
-                         <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
-                           <div className="flex items-center gap-2">
-                             <User className="h-5 w-5 text-blue-500" />
-                             <div className="flex-1">
-                               <div className="font-medium text-sm">
-                                 {m.file.contact?.first_name} {m.file.contact?.last_name || ''}
-                               </div>
-                               <div className="text-xs text-muted-foreground">{m.file.contact?.phone_number}</div>
-                             </div>
-                           </div>
-                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-                             {new Date(m.at).toLocaleTimeString()}
-                             {isFromMe && m.is_outgoing && (
-                               m.is_read ? (
-                                 <CheckCheck className="h-3 w-3" />
-                               ) : (
-                                 <Check className="h-3 w-3" />
-                               )
-                             )}
-                           </div>
-                         </div>
-                       ) : null
-                     ) : null}
+                     {renderFile(m, isFromMe)}
                      {!m.file && (
                        <div className="text-[10px] text-white mt-1 text-right flex justify-end items-center gap-1">
                          {new Date(m.at).toLocaleTimeString()}

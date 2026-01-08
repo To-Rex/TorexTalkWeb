@@ -108,6 +108,7 @@ export interface MessageItem {
   file_url: string | null;
   file_name: string | null;
   mime_type: string | null;
+  thumb_url: string | null;
   is_read: boolean;
   is_outgoing: boolean | null;
 }

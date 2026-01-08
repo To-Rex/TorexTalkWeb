@@ -16,7 +16,10 @@ import { Paperclip, Mic, Send, X, Calendar } from "lucide-react";
 
 export type Outgoing =
   | { text: string; attachment?: undefined }
-  | { text?: string; attachment: { type: "image" | "audio" | "document"; file: File } }
+  | { text?: string; attachment: { type: "image"; file: File } }
+  | { text?: string; attachment: { type: "image"; url: string; name?: string } }
+  | { text?: string; attachment: { type: "audio"; file: File } }
+  | { text?: string; attachment: { type: "document"; file: File } }
   | { text?: string; attachment: { type: "location"; url: string; name?: string } };
 
 export default function MessageComposer({
@@ -30,6 +33,9 @@ export default function MessageComposer({
   const [selectedType, setSelectedType] = useState<"image" | "audio" | "document" | null>(
     null,
   );
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageThumbnail, setImageThumbnail] = useState<string | null>(null);
+  const [isGeneratingThumb, setIsGeneratingThumb] = useState(false);
 
   const templates = [
     "Salom! Sizga qanday yordam bera olaman?",
@@ -51,6 +57,9 @@ export default function MessageComposer({
     setSelectedFile(null);
     setSelectedType(null);
     setWhen("");
+    setImageUrl("");
+    setImageThumbnail(null);
+    setIsGeneratingThumb(false);
     if (imgRef.current) imgRef.current.value = "";
     if (audioRef.current) audioRef.current.value = "";
     if (docRef.current) docRef.current.value = "";
@@ -59,18 +68,26 @@ export default function MessageComposer({
   const handleSend = () => {
     const hasText = !!text.trim();
     const hasFile = !!selectedFile && !!selectedType;
-    if (!hasText && !hasFile) return;
+    const hasUrl = !!imageUrl && selectedType === "image";
+    if (!hasText && !hasFile && !hasUrl) return;
 
     const ts = when ? new Date(when).getTime() : 0;
     const delay = ts - Date.now();
 
     const sendNow = () => {
+      let payload: any;
       if (hasFile && selectedFile && selectedType) {
-        onSend({ attachment: { type: selectedType, file: selectedFile } });
+        if (selectedType === "image") {
+          payload = { text: hasText ? text.trim() : undefined, attachment: { type: "image", file: selectedFile } };
+        } else {
+          payload = { text: hasText ? text.trim() : undefined, attachment: { type: selectedType as "audio" | "document", file: selectedFile } };
+        }
+      } else if (imageUrl && selectedType === "image") {
+        payload = { text: hasText ? text.trim() : undefined, attachment: { type: "image", url: imageUrl, name: "Image from URL" } };
+      } else {
+        payload = { text: text.trim() };
       }
-      if (hasText) {
-        onSend({ text: text.trim() });
-      }
+      onSend(payload as Outgoing);
     };
 
     if (when && delay > 0) {
@@ -120,6 +137,47 @@ export default function MessageComposer({
     setSelectedFile(f);
   };
 
+  const generateThumbnail = async (url: string) => {
+    setIsGeneratingThumb(true);
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = url;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas not supported");
+      const maxSize = 300;
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+      canvas.width = img.width * ratio;
+      canvas.height = img.height * ratio;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const thumbUrl = URL.createObjectURL(blob);
+          setImageThumbnail(thumbUrl);
+        }
+        setIsGeneratingThumb(false);
+      }, "image/jpeg", 0.8);
+    } catch (error) {
+      console.error("Failed to generate thumbnail", error);
+      setImageThumbnail(null);
+      setIsGeneratingThumb(false);
+    }
+  };
+
+  const onImageUrlChange = (url: string) => {
+    setImageUrl(url);
+    if (url) {
+      generateThumbnail(url);
+    } else {
+      setImageThumbnail(null);
+    }
+  };
+
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -164,6 +222,7 @@ export default function MessageComposer({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuItem onClick={onPickImage}>Surat/Video tanlash</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedType("image")}>Surat URL ulash</DropdownMenuItem>
             <DropdownMenuItem onClick={onPickAudio}>Audio tanlash</DropdownMenuItem>
             <DropdownMenuItem onClick={onPickDocument}>Hujjat tanlash</DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -270,6 +329,36 @@ export default function MessageComposer({
           >
             <X className="h-3 w-3" /> O'chirish
           </button>
+        </div>
+      ) : selectedType === "image" ? (
+        <div className="mt-2 space-y-2">
+          <Input
+            placeholder="Surat URL kiriting..."
+            value={imageUrl}
+            onChange={(e) => onImageUrlChange(e.target.value)}
+            className="text-xs"
+          />
+          {isGeneratingThumb && (
+            <div className="text-xs text-muted-foreground">Thumbnail yaratilmoqda...</div>
+          )}
+          {imageThumbnail && (
+            <div className="flex items-center gap-2">
+              <img src={imageThumbnail} alt="Thumbnail" className="w-16 h-16 rounded object-cover" />
+              <div className="flex-1 text-xs text-muted-foreground">Thumbnail tayyor</div>
+              <button
+                onClick={() => {
+                  setSelectedType(null);
+                  setImageUrl("");
+                  setImageThumbnail(null);
+                }}
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] hover:bg-accent/40"
+                aria-label="Bekor qilish"
+                title="Bekor qilish"
+              >
+                <X className="h-3 w-3" /> Bekor qilish
+              </button>
+            </div>
+          )}
         </div>
       ) : null}
 

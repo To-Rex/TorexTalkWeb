@@ -8,6 +8,7 @@ const supabase = createClient(
 
 class ApiService {
   private baseUrl = import.meta.env.VITE_API_BASE_URL;
+  private ongoingRequests = new Map<string, Promise<any>>();
 
   private async getAuthHeaders() {
     const { data: session } = await supabase.auth.getSession();
@@ -53,11 +54,27 @@ class ApiService {
   }
 
   async fetchChatMessages(chatId: string, sessionIndex: string, offset: number = 0): Promise<ChatMessagesResponse> {
+    const key = `${chatId}-${sessionIndex}-${offset}`;
+    if (this.ongoingRequests.has(key)) {
+      return this.ongoingRequests.get(key);
+    }
+    const requestPromise = this.performFetchChatMessages(chatId, sessionIndex, offset);
+    this.ongoingRequests.set(key, requestPromise);
+    try {
+      const result = await requestPromise;
+      return result;
+    } finally {
+      this.ongoingRequests.delete(key);
+    }
+  }
+
+  private async performFetchChatMessages(chatId: string, sessionIndex: string, offset: number = 0): Promise<ChatMessagesResponse> {
     const headers = await this.getAuthHeaders();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     try {
-      const url = `${this.baseUrl}/me/chats/${chatId}/messages?session_index=${sessionIndex}&limit=10&offset=${offset}`;
+      const cleanChatId = chatId.replace(/^\//, '');
+      const url = `${this.baseUrl}/me/chats/${cleanChatId}/messages?limit=10&offset=${offset}&session_index=${sessionIndex}`;
       console.log('Fetching chat messages from:', url);
       const res = await fetch(url, {
         headers,
@@ -73,6 +90,26 @@ class ApiService {
       clearTimeout(timeoutId);
       console.error('Fetch error for chat messages:', error);
       throw error;
+    }
+  }
+
+  async downloadMedia(accountIndex: number, fileId: string, mediaType: string) {
+    const headers = await this.getAuthHeaders();
+    let actualFileId = fileId;
+    if (fileId.startsWith(this.baseUrl)) {
+      actualFileId = fileId.replace(this.baseUrl, '');
+    }
+    const res = await fetch(`${this.baseUrl}/me/download_media?account_index=${accountIndex}&file_id=${actualFileId}&media_type=${mediaType}`, {
+      headers,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to download media: ${res.status}`);
+    }
+    const data = await res.json();
+    if (data.ok) {
+      return this.baseUrl + data.url;
+    } else {
+      throw new Error('Download failed');
     }
   }
 

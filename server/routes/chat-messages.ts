@@ -38,12 +38,14 @@ export const handleChatMessages: RequestHandler = (req, res) => {
           status: "UserStatus.RECENTLY",
           bio: null
         },
-        text: `Message ${id}`,
-        caption: null,
-        media_type: null,
-        file_id: null,
-        file_name: null,
-        mime_type: null,
+        text: id === 5621 ? null : `Message ${id}`,
+        caption: id === 5621 ? "Test image" : null,
+        media_type: id === 5621 ? "photo" : null,
+        file_id: id === 5621 ? "test.jpg" : null,
+        file_url: id === 5621 ? "test.jpg" : null,
+        file_name: id === 5621 ? "test.jpg" : null,
+        mime_type: id === 5621 ? "image/jpeg" : null,
+        thumb_url: id === 5621 ? "/media/thumb_test.jpg" : null,
         is_read: !isOutgoing,
         is_outgoing: parseInt(chat_id) > 0 ? isOutgoing : null
       });
