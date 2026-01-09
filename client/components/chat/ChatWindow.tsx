@@ -4,6 +4,7 @@ import { ArrowLeft, Check, CheckCheck, Loader2, MapPin, User, Play, Pause, Arrow
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import VideoNotePlayer from "./VideoNotePlayer";
 import { apiService } from "@/lib/api";
 
@@ -17,6 +18,8 @@ export interface FileAttachment {
   waveform?: number[] | null;
   mime_type?: string;
   thumb_url?: string;
+  latitude?: number;
+  longitude?: number;
   contact?: {
     first_name: string;
     last_name?: string;
@@ -28,6 +31,7 @@ export interface Message {
   id: string;
   sender: string;
   text?: string;
+  caption?: string;
   at: number;
   file?: FileAttachment;
   is_read?: boolean;
@@ -270,7 +274,7 @@ export default function ChatWindow({
               <img
                 src={m.file.thumb_url || "/placeholder.svg"}
                 alt="image"
-                className="max-w-[300px] rounded-lg"
+                className="max-w-[300px] max-h-[300px] rounded-lg"
               />
               <div
                 className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center cursor-pointer"
@@ -306,7 +310,7 @@ export default function ChatWindow({
               <img
                 src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '/placeholder.svg')}
                 alt={m.file.name ?? "image"}
-                className="max-w-[300px] rounded-lg cursor-pointer"
+                className="max-w-[300px] max-h-[300px] rounded-lg cursor-pointer"
                 onClick={async () => {
                   let url = mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : null);
                   if (!url) {
@@ -344,9 +348,9 @@ export default function ChatWindow({
       case "video":
         if (!isLoaded) {
           return (
-            <div className="relative mt-1 inline-block">
+            <div className="relative inline-block">
               <div
-                className="max-w-[300px] h-48 bg-muted rounded-lg flex items-center justify-center cursor-pointer"
+                className="w-56 h-56 bg-muted rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
                 style={m.file.thumb_url ? { backgroundImage: `url(${m.file.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
                 onClick={async () => {
                   try {
@@ -374,30 +378,8 @@ export default function ChatWindow({
           );
         } else {
           return (
-            <div className="relative mt-1 inline-block">
-              <video
-                src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '')}
-                controls
-                className="max-w-[300px] rounded-lg"
-                style={{ borderRadius: '12px' }}
-                onPlay={async () => {
-                  if (!mediaUrls.get(m.file.url) && !m.file.url.startsWith('/')) {
-                    try {
-                      const url = await apiService.downloadMedia(1, m.file.url, 'video');
-                      setMediaUrls(prev => new Map(prev).set(m.file.url, url));
-                    } catch (e) {
-                      console.error('Download failed', e);
-                    }
-                  }
-                }}
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                  (e.target as HTMLElement).parentNode?.querySelector('.error-placeholder')?.setAttribute('style', 'display: flex;');
-                }}
-              />
-              <div className="error-placeholder hidden items-center justify-center w-full h-32 bg-muted rounded-lg text-muted-foreground text-sm">
-                Video not available
-              </div>
+            <div className="relative inline-block">
+              <VideoNotePlayer src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '')} />
               <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
                 {new Date(m.at).toLocaleTimeString()}
                 {isFromMe && m.is_outgoing && (
@@ -416,7 +398,7 @@ export default function ChatWindow({
           return (
             <div className="relative inline-block">
               <div
-                className="w-56 h-56 bg-muted rounded-full flex items-center justify-center cursor-pointer"
+                className="w-56 h-56 bg-muted rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
                 style={m.file.thumb_url ? { backgroundImage: `url(${m.file.thumb_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
                 onClick={async () => {
                   try {
@@ -461,17 +443,97 @@ export default function ChatWindow({
           );
         }
       case "audio":
+        const isDownloadedAudio = mediaUrls.has(m.file.url);
+        const isPlayingAudio = playingAudios.get(m.id) || false;
+        const progressAudio = audioProgress.get(m.id) || 0;
+        const truncateMiddle = (str: string, maxLen: number) => {
+          if (str.length <= maxLen) return str;
+          const half = Math.floor((maxLen - 3) / 2);
+          return str.slice(0, half) + '...' + str.slice(-half);
+        };
+        const controlsDiv = (
+          <div className="flex items-center space-x-2">
+            <button
+              className={`p-2 rounded-full ${isFromMe ? 'bg-white text-blue-500 hover:bg-gray-100' : 'bg-blue-500 text-white hover:bg-blue-100'} transition-colors`}
+              onClick={async () => {
+                if (!isDownloadedAudio) {
+                  try {
+                    const url = await apiService.downloadMedia(1, m.file.url, 'audio');
+                    setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                  } catch (e) {
+                    console.error('Download failed', e);
+                  }
+                } else {
+                  let audio = audioInstances.current.get(m.id);
+                  if (!audio) {
+                    audio = new Audio(mediaUrls.get(m.file.url));
+                    audioInstances.current.set(m.id, audio);
+                    audio.onended = () => {
+                      setPlayingAudios(prev => new Map(prev).set(m.id, false));
+                      setAudioProgress(prev => new Map(prev).set(m.id, 0));
+                      setCurrentTimeDisplay(prev => new Map(prev).set(m.id, '0:00'));
+                    };
+                    audio.ontimeupdate = () => {
+                      const progress = audio.currentTime / audio.duration;
+                      setAudioProgress(prev => new Map(prev).set(m.id, progress));
+                      const minutes = Math.floor(audio.currentTime / 60);
+                      const seconds = Math.floor(audio.currentTime % 60);
+                      const formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                      setCurrentTimeDisplay(prev => new Map(prev).set(m.id, formatted));
+                    };
+                  }
+                  if (isPlayingAudio) {
+                    audio.pause();
+                    setPlayingAudios(prev => new Map(prev).set(m.id, false));
+                  } else {
+                    audio.play();
+                    setPlayingAudios(prev => new Map(prev).set(m.id, true));
+                  }
+                }
+              }}
+            >
+              {isDownloadedAudio ? (isPlayingAudio ? <Pause size={16} /> : <Play size={16} />) : <ArrowDown size={16} />}
+            </button>
+            <div className="flex flex-col flex-1 min-w-0">
+              <div className="text-sm font-medium text-white">{truncateMiddle(m.file.name || '', 30)}</div>
+              <div className="flex items-center space-x-2 mt-1">
+                <div className={`flex-1 h-1 rounded ${isFromMe ? 'bg-white' : 'bg-gray-300'}`}>
+                  <div
+                    className={`h-full rounded ${isFromMe ? 'bg-blue-500' : 'bg-blue-600'}`}
+                    style={{ width: `${progressAudio * 100}%` }}
+                  ></div>
+                </div>
+                <span className={`text-xs ${isFromMe ? 'text-white/70' : 'text-gray-500'}`}>{m.file.size}</span>
+              </div>
+            </div>
+          </div>
+        );
+        return (
+          <div className={`relative mt-1 p-3 rounded-lg ${isFromMe ? 'bg-primary' : 'bg-secondary'} ${m.caption ? 'max-w-[350px]' : 'max-w-[400px]'}`}>
+            {m.caption ? (
+              <>
+                <div className={`text-sm ${isFromMe ? 'text-white' : 'text-gray-700'} break-words`}>{m.caption}</div>
+                <div className="mt-2">{controlsDiv}</div>
+              </>
+            ) : (
+              controlsDiv
+            )}
+            <div className="absolute bottom-1 right-1 z-10 bg-black/50 text-white text-[10px] px-1 rounded">
+              {new Date(m.at).toLocaleTimeString()}
+            </div>
+          </div>
+        );
       case "voice":
-        const isDownloaded = mediaUrls.has(m.file.url);
-        const isPlaying = playingAudios.get(m.id) || false;
-        const progress = audioProgress.get(m.id) || 0;
+        const isDownloadedVoice = mediaUrls.has(m.file.url);
+        const isPlayingVoice = playingAudios.get(m.id) || false;
+        const progressVoice = audioProgress.get(m.id) || 0;
         const waveformBars = m.file.waveform?.slice(0, 40) || [];
         return (
           <div className={`relative mt-1 pl-0 pr-2 py-2 pb-6 max-w-[250px] rounded-lg flex items-center space-x-2`}>
               <button
                 className={`p-2 rounded-full ${isFromMe ? 'bg-white text-blue-500 hover:bg-gray-100' : 'bg-blue-500 text-white hover:bg-blue-100'} transition-colors`}
                 onClick={async () => {
-                  if (!isDownloaded) {
+                  if (!isDownloadedVoice) {
                     try {
                       const url = await apiService.downloadMedia(1, m.file.url, 'voice');
                       setMediaUrls(prev => new Map(prev).set(m.file.url, url));
@@ -497,7 +559,7 @@ export default function ChatWindow({
                         setCurrentTimeDisplay(prev => new Map(prev).set(m.id, formatted));
                       };
                     }
-                    if (isPlaying) {
+                    if (isPlayingVoice) {
                       audio.pause();
                       setPlayingAudios(prev => new Map(prev).set(m.id, false));
                     } else {
@@ -507,10 +569,10 @@ export default function ChatWindow({
                   }
                 }}
               >
-                {isDownloaded ? (isPlaying ? <Pause size={16} /> : <Play size={16} />) : <ArrowDown size={16} />}
+                {isDownloadedVoice ? (isPlayingVoice ? <Pause size={16} /> : <Play size={16} />) : <ArrowDown size={16} />}
               </button>
 
-              <span className={`text-sm font-medium ${isFromMe ? 'text-white' : 'text-gray-600'}`}>{isPlaying ? (currentTimeDisplay.get(m.id) || '0:00') : (m.file.duration_formatted || (m.file.duration ? Math.floor(m.file.duration / 60) + ':' + (m.file.duration % 60).toString().padStart(2, '0') : ''))}</span>
+              <span className={`text-sm font-medium ${isFromMe ? 'text-white' : 'text-gray-600'}`}>{isPlayingVoice ? (currentTimeDisplay.get(m.id) || '0:00') : (m.file.duration_formatted || (m.file.duration ? Math.floor(m.file.duration / 60) + ':' + (m.file.duration % 60).toString().padStart(2, '0') : ''))}</span>
 
               <div
                 ref={(el) => {
@@ -518,7 +580,7 @@ export default function ChatWindow({
                 }}
                 className="flex items-end space-x-0.5 flex-1 min-w-0 overflow-hidden cursor-pointer"
                 onMouseDown={(e) => {
-                  if (isDownloaded) {
+                  if (isDownloadedVoice) {
                     setDraggingMessageId(m.id);
                     const rect = e.currentTarget.getBoundingClientRect();
                     const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -528,7 +590,7 @@ export default function ChatWindow({
               >
                 {waveformBars.map((value, index) => {
                   const barProgress = index / waveformBars.length;
-                  const isPlayed = barProgress < progress;
+                  const isPlayed = barProgress < progressVoice;
                   return (
                     <div
                       key={index}
@@ -541,7 +603,7 @@ export default function ChatWindow({
                           const setSeek = () => {
                             audio.currentTime = seekTime;
                             setAudioProgress(prev => new Map(prev).set(m.id, barProgress));
-                            if (!isPlaying) {
+                            if (!isPlayingVoice) {
                               audio.play();
                               setPlayingAudios(prev => new Map(prev).set(m.id, true));
                             }
@@ -605,25 +667,26 @@ export default function ChatWindow({
           </div>
         );
       case "location":
+        const coords = m.file.latitude && m.file.longitude ? { lat: m.file.latitude, lng: m.file.longitude } : (() => {
+          const url = m.file.url;
+          const match = url.match(/q=([-\d.]+),([-\d.]+)/);
+          if (match) {
+            return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+          }
+          return { lat: 41.2995, lng: 69.2401 }; // Default to Tashkent
+        })();
         return (
-          <div className="relative mt-1 rounded-lg bg-secondary/50 border p-3 max-w-[250px]">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-red-500" />
-              <div className="flex-1">
-                <div className="font-medium text-sm">Location</div>
-                {m.file.name && (
-                  <div className="text-xs text-muted-foreground">{m.file.name}</div>
-                )}
-              </div>
-              <a
-                href={m.file.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs rounded px-2 py-1 border hover:bg-background"
-              >
-                View
-              </a>
-            </div>
+          <div className="relative mt-1 rounded-lg p-0 max-w-[350px]" style={{ overflow: 'hidden' }}>
+            <iframe
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.005},${coords.lat - 0.005},${coords.lng + 0.005},${coords.lat + 0.005}&layer=mapnik&marker=${coords.lat},${coords.lng}`}
+              width="100%"
+              height="180"
+              style={{ borderRadius: '8px', pointerEvents: 'none' }}
+              title="Location map"
+            ></iframe>
+            {m.file.name && (
+              <div className="absolute bottom-1 left-2 text-xs text-white bg-black/50 px-1 rounded">{m.file.name}</div>
+            )}
             <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
               {new Date(m.at).toLocaleTimeString()}
               {isFromMe && m.is_outgoing && (
@@ -792,13 +855,13 @@ export default function ChatWindow({
                        )}
                      </div>
                      <div className="flex flex-col max-w-[80%]">
-                       {firstMessage.file && firstMessage.file.type !== 'video_note' && firstMessage.file.type !== 'image' && (
+                       {firstMessage.file && firstMessage.file.type !== 'video' && firstMessage.file.type !== 'image' && firstMessage.file.type !== 'location' && (
                          <div className="text-xs font-medium text-muted-foreground mb-1">
                            {firstMessage.sender === "them" ? title : firstMessage.sender}
                          </div>
                        )}
                        {group.map((m) => (
-                         <div key={m.id} className={`w-fit mb-1 ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? '' : 'relative rounded-lg px-3 py-2 text-sm text-white bg-secondary'}`}>
+                         <div key={m.id} className={`w-fit mb-1 ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' || m.file?.type === 'location' ? '' : 'relative rounded-lg px-3 py-2 text-sm text-white bg-secondary'}`}>
                            {m.text && m.file?.type !== 'video_note' ? (
                              <div className="mb-1 whitespace-pre-wrap">{m.text}</div>
                            ) : null}
@@ -824,10 +887,10 @@ export default function ChatWindow({
                  return group.map((m, messageIndex) => (
                    <div
                      key={m.id}
-                     className={`w-fit max-w-[80%] ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? (isFromMe ? 'ml-auto' : '') : `relative rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}`}
+                     className={`w-fit max-w-[80%] ${m.file?.type === 'video_note' || m.file?.type === 'video' || m.file?.type === 'image' || m.file?.type === 'document' || m.file?.type === 'location' ? (isFromMe ? 'ml-auto' : '') : `relative rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}`}
                      ref={isLastGroup && messageIndex === group.length - 1 ? lastMessageRef : null}
                    >
-                     {m.sender !== "me" && m.file && m.file.type !== 'video_note' && m.file.type !== 'image' && m.file.type !== 'document' && m.file.type !== 'voice' && m.file.type !== 'audio' ? (
+                     {m.sender !== "me" && m.file && m.file.type !== 'video' && m.file.type !== 'image' && m.file.type !== 'document' && m.file.type !== 'voice' && m.file.type !== 'audio' && m.file.type !== 'location' ? (
                        <div className="text-xs font-medium text-white mb-1">
                          {m.sender === "them" ? title : m.sender}
                        </div>

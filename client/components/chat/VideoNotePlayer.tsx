@@ -86,23 +86,15 @@ export default function VideoNotePlayer({ src }: VideoNotePlayerProps) {
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="relative w-56 h-56">
+    <div className="relative w-56 h-56 rounded-full overflow-hidden">
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
         <circle
           cx="50"
           cy="50"
           r="45"
           fill="none"
-          stroke="rgba(255,255,255,0.3)"
-          strokeWidth="2"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
           stroke="white"
-          strokeWidth="2"
+          strokeWidth="1"
           strokeDasharray={strokeDasharray}
           strokeDashoffset={strokeDashoffset}
           transform="rotate(-90 50 50)"
