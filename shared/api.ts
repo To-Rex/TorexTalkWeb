@@ -90,6 +90,8 @@ export interface MessageUser {
   photo_url: string | null;
   status: string | null;
   bio: string | null;
+  is_premium: boolean | null;
+  emoji_url: string | null;
 }
 
 /**
@@ -109,6 +111,10 @@ export interface MessageItem {
   file_name: string | null;
   mime_type: string | null;
   thumb_url: string | null;
+  file_size: string | null;
+  duration_seconds: number | null;
+  duration_formatted: string | null;
+  waveform: number[] | null;
   is_read: boolean;
   is_outgoing: boolean | null;
 }

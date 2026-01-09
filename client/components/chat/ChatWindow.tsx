@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/auth";
-import { ArrowLeft, Check, CheckCheck, Loader2, MapPin, User, Play, ArrowDown, X, Download, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Loader2, MapPin, User, Play, Pause, ArrowDown, X, Download, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
@@ -11,8 +11,10 @@ export interface FileAttachment {
   type: "image" | "audio" | "document" | "location" | "video" | "video_note" | "contact" | "voice";
   url: string;
   name?: string;
-  size?: number;
+  size?: string | number;
   duration?: number;
+  duration_formatted?: string;
+  waveform?: number[] | null;
   mime_type?: string;
   thumb_url?: string;
   contact?: {
@@ -80,6 +82,10 @@ export default function ChatWindow({
   const [startPan, setStartPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [mediaUrls, setMediaUrls] = useState<Map<string, string>>(new Map());
   const downloadedRef = useRef<Set<string>>(new Set());
+  const [playingAudios, setPlayingAudios] = useState<Map<string, boolean>>(new Map());
+  const audioInstances = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const [audioProgress, setAudioProgress] = useState<Map<string, number>>(new Map());
+  const [draggingAudio, setDraggingAudio] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedImage) {
@@ -407,48 +413,90 @@ export default function ChatWindow({
         }
       case "audio":
       case "voice":
+        const isDownloaded = mediaUrls.has(m.file.url);
+        const isPlaying = playingAudios.get(m.id) || false;
+        const progress = audioProgress.get(m.id) || 0;
+        const waveformBars = m.file.waveform?.slice(0, 40) || [];
         return (
-          <div className="relative mt-1 flex items-center gap-2 p-2 max-w-[250px]">
-            <button className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
-              <Play className="h-4 w-4 text-white" />
-            </button>
-            <button
-              onClick={async () => {
-                if (!mediaUrls.get(m.file.url) && !m.file.url.startsWith('/')) {
-                  try {
-                    const url = await apiService.downloadMedia(1, m.file.url, 'voice');
-                    setMediaUrls(prev => new Map(prev).set(m.file.url, url));
-                  } catch (e) {
-                    console.error('Download failed', e);
+          <div className="relative mt-1 p-2 max-w-[250px]">
+            <div className={`flex items-center space-x-2 p-3 rounded-lg ${isFromMe ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+              <button
+                className={`p-2 rounded-full ${isFromMe ? 'bg-white text-blue-500 hover:bg-gray-100' : 'bg-blue-500 text-white hover:bg-blue-600'} transition-colors`}
+                onClick={async () => {
+                  if (!isDownloaded) {
+                    try {
+                      const url = await apiService.downloadMedia(1, m.file.url, 'voice');
+                      setMediaUrls(prev => new Map(prev).set(m.file.url, url));
+                    } catch (e) {
+                      console.error('Download failed', e);
+                    }
+                  } else {
+                    let audio = audioInstances.current.get(m.id);
+                    if (!audio) {
+                      audio = new Audio(mediaUrls.get(m.file.url));
+                      audioInstances.current.set(m.id, audio);
+                      audio.onended = () => {
+                        setPlayingAudios(prev => new Map(prev).set(m.id, false));
+                        setAudioProgress(prev => new Map(prev).set(m.id, 0));
+                      };
+                      audio.ontimeupdate = () => {
+                        setAudioProgress(prev => new Map(prev).set(m.id, audio.currentTime / audio.duration));
+                      };
+                    }
+                    if (isPlaying) {
+                      audio.pause();
+                      setPlayingAudios(prev => new Map(prev).set(m.id, false));
+                    } else {
+                      audio.play();
+                      setPlayingAudios(prev => new Map(prev).set(m.id, true));
+                    }
                   }
-                }
-              }}
-              className="flex items-center justify-center w-8 h-8 bg-primary rounded-full hover:bg-primary/80"
-            >
-              <Download className="h-4 w-4 text-white" />
-            </button>
-            <div className="flex-1">
-              {m.file.duration && (
-                <div className="text-sm text-muted-foreground">
-                  {Math.floor(m.file.duration / 60)}:{(m.file.duration % 60).toString().padStart(2, '0')}
-                </div>
-              )}
-            </div>
-            <audio src={mediaUrls.get(m.file.url) || (m.file.url.startsWith('/') ? m.file.url : '')} onPlay={async () => {
-              if (!mediaUrls.get(m.file.url) && !m.file.url.startsWith('/')) {
-                try {
-                  const url = await apiService.downloadMedia(1, m.file.url, 'voice');
-                  setMediaUrls(prev => new Map(prev).set(m.file.url, url));
-                } catch (e) {
-                  console.error('Download failed', e);
-                }
-              }
-            }} onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-              (e.target as HTMLElement).parentNode?.querySelector('.error-placeholder')?.setAttribute('style', 'display: flex;');
-            }} />
-            <div className="error-placeholder hidden items-center justify-center w-full h-8 bg-muted rounded text-muted-foreground text-sm">
-              Audio not available
+                }}
+              >
+                {isDownloaded ? (isPlaying ? <Pause size={16} /> : <Play size={16} />) : <ArrowDown size={16} />}
+              </button>
+              <div
+                className="flex items-end space-x-0.5 flex-1 min-w-0 overflow-hidden cursor-pointer"
+                onMouseDown={(e) => {
+                  setDraggingAudio(m.id);
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                  const audio = audioInstances.current.get(m.id);
+                  if (audio && audio.duration) {
+                    audio.currentTime = progress * audio.duration;
+                    setAudioProgress(prev => new Map(prev).set(m.id, progress));
+                  }
+                }}
+                onMouseMove={(e) => {
+                  if (draggingAudio === m.id) {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    const audio = audioInstances.current.get(m.id);
+                    if (audio && audio.duration) {
+                      audio.currentTime = progress * audio.duration;
+                      setAudioProgress(prev => new Map(prev).set(m.id, progress));
+                    }
+                  }
+                }}
+                onMouseUp={() => setDraggingAudio(null)}
+                onMouseLeave={() => setDraggingAudio(null)}
+              >
+                {waveformBars.map((value, index) => {
+                  const barProgress = index / waveformBars.length;
+                  const isPlayed = barProgress < progress;
+                  return (
+                    <div
+                      key={index}
+                      className={`${isPlayed ? (isFromMe ? 'bg-blue-300' : 'bg-blue-600') : (isFromMe ? 'bg-gray-300' : 'bg-blue-400')} rounded-sm flex-shrink-0 hover:opacity-80`}
+                      style={{ height: `${Math.max(1, (value / 255) * 16)}px`, width: '1px' }}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex flex-col items-end">
+                <span className={`text-sm font-medium ${isFromMe ? 'text-white' : 'text-gray-600'}`}>{m.file.duration_formatted || (m.file.duration ? Math.floor(m.file.duration / 60) + ':' + (m.file.duration % 60).toString().padStart(2, '0') : '')}</span>
+                {m.file.size && <span className={`text-xs ${isFromMe ? 'text-white/70' : 'text-gray-500'}`}>{typeof m.file.size === 'string' ? m.file.size : `${(m.file.size / 1024 / 1024).toFixed(1)} MB`}</span>}
+              </div>
             </div>
             <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
               {new Date(m.at).toLocaleTimeString()}
@@ -485,7 +533,7 @@ export default function ChatWindow({
               <div className="text-sm font-medium truncate">{m.file.name ?? "File"}</div>
               {m.file.size && (
                 <div className="text-xs text-muted-foreground">
-                  {(m.file.size / 1024 / 1024).toFixed(1)} MB
+                  {typeof m.file.size === 'string' ? m.file.size : `${(m.file.size / 1024 / 1024).toFixed(1)} MB`}
                 </div>
               )}
             </div>
