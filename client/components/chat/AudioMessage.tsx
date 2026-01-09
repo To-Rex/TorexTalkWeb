@@ -18,7 +18,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({ message, is_outgoing
 
   return (
 
-    <div className={`flex items-center space-x-2 p-3 rounded-lg ${is_outgoing ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+    <div className={`flex items-center space-x-2 p-3 rounded-lg`}>
 
       <button className={`p-2 rounded-full ${is_outgoing ? 'bg-white text-blue-500 hover:bg-gray-100' : 'bg-blue-500 text-white hover:bg-blue-600'} transition-colors`}>
 

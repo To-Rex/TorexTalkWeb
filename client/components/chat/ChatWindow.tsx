@@ -85,7 +85,56 @@ export default function ChatWindow({
   const [playingAudios, setPlayingAudios] = useState<Map<string, boolean>>(new Map());
   const audioInstances = useRef<Map<string, HTMLAudioElement>>(new Map());
   const [audioProgress, setAudioProgress] = useState<Map<string, number>>(new Map());
-  const [draggingAudio, setDraggingAudio] = useState<string | null>(null);
+  const [currentTimeDisplay, setCurrentTimeDisplay] = useState<Map<string, string>>(new Map());
+  const [draggingMessageId, setDraggingMessageId] = useState<string | null>(null);
+  const waveformRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (draggingMessageId) {
+        const waveformEl = waveformRefs.current.get(draggingMessageId);
+        if (waveformEl) {
+          const rect = waveformEl.getBoundingClientRect();
+          const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          setAudioProgress(prev => new Map(prev).set(draggingMessageId, progress));
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (draggingMessageId) {
+        const progress = audioProgress.get(draggingMessageId) || 0;
+        const audio = audioInstances.current.get(draggingMessageId);
+        const isPlaying = playingAudios.get(draggingMessageId) || false;
+        if (audio) {
+          const seekTime = progress * (audio.duration || 0);
+          const setSeek = () => {
+            audio.currentTime = seekTime;
+            if (!isPlaying) {
+              audio.play();
+              setPlayingAudios(prev => new Map(prev).set(draggingMessageId, true));
+            }
+          };
+          if (audio.readyState < 2) {
+            audio.addEventListener('loadedmetadata', setSeek, { once: true });
+          } else {
+            setSeek();
+          }
+        }
+        setDraggingMessageId(null);
+      }
+    };
+
+    if (draggingMessageId) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingMessageId, audioProgress]);
 
   useEffect(() => {
     if (selectedImage) {
@@ -418,10 +467,9 @@ export default function ChatWindow({
         const progress = audioProgress.get(m.id) || 0;
         const waveformBars = m.file.waveform?.slice(0, 40) || [];
         return (
-          <div className="relative mt-1 p-2 max-w-[250px]">
-            <div className={`flex items-center space-x-2 p-3 rounded-lg ${isFromMe ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+          <div className={`relative mt-1 pl-0 pr-2 py-2 pb-6 max-w-[250px] rounded-lg flex items-center space-x-2`}>
               <button
-                className={`p-2 rounded-full ${isFromMe ? 'bg-white text-blue-500 hover:bg-gray-100' : 'bg-blue-500 text-white hover:bg-blue-600'} transition-colors`}
+                className={`p-2 rounded-full ${isFromMe ? 'bg-white text-blue-500 hover:bg-gray-100' : 'bg-blue-500 text-white hover:bg-blue-100'} transition-colors`}
                 onClick={async () => {
                   if (!isDownloaded) {
                     try {
@@ -438,9 +486,15 @@ export default function ChatWindow({
                       audio.onended = () => {
                         setPlayingAudios(prev => new Map(prev).set(m.id, false));
                         setAudioProgress(prev => new Map(prev).set(m.id, 0));
+                        setCurrentTimeDisplay(prev => new Map(prev).set(m.id, '0:00'));
                       };
                       audio.ontimeupdate = () => {
-                        setAudioProgress(prev => new Map(prev).set(m.id, audio.currentTime / audio.duration));
+                        const progress = audio.currentTime / audio.duration;
+                        setAudioProgress(prev => new Map(prev).set(m.id, progress));
+                        const minutes = Math.floor(audio.currentTime / 60);
+                        const seconds = Math.floor(audio.currentTime % 60);
+                        const formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        setCurrentTimeDisplay(prev => new Map(prev).set(m.id, formatted));
                       };
                     }
                     if (isPlaying) {
@@ -455,31 +509,22 @@ export default function ChatWindow({
               >
                 {isDownloaded ? (isPlaying ? <Pause size={16} /> : <Play size={16} />) : <ArrowDown size={16} />}
               </button>
+
+              <span className={`text-sm font-medium ${isFromMe ? 'text-white' : 'text-gray-600'}`}>{isPlaying ? (currentTimeDisplay.get(m.id) || '0:00') : (m.file.duration_formatted || (m.file.duration ? Math.floor(m.file.duration / 60) + ':' + (m.file.duration % 60).toString().padStart(2, '0') : ''))}</span>
+
               <div
+                ref={(el) => {
+                  if (el) waveformRefs.current.set(m.id, el);
+                }}
                 className="flex items-end space-x-0.5 flex-1 min-w-0 overflow-hidden cursor-pointer"
                 onMouseDown={(e) => {
-                  setDraggingAudio(m.id);
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                  const audio = audioInstances.current.get(m.id);
-                  if (audio && audio.duration) {
-                    audio.currentTime = progress * audio.duration;
+                  if (isDownloaded) {
+                    setDraggingMessageId(m.id);
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
                     setAudioProgress(prev => new Map(prev).set(m.id, progress));
                   }
                 }}
-                onMouseMove={(e) => {
-                  if (draggingAudio === m.id) {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    const audio = audioInstances.current.get(m.id);
-                    if (audio && audio.duration) {
-                      audio.currentTime = progress * audio.duration;
-                      setAudioProgress(prev => new Map(prev).set(m.id, progress));
-                    }
-                  }
-                }}
-                onMouseUp={() => setDraggingAudio(null)}
-                onMouseLeave={() => setDraggingAudio(null)}
               >
                 {waveformBars.map((value, index) => {
                   const barProgress = index / waveformBars.length;
@@ -487,27 +532,37 @@ export default function ChatWindow({
                   return (
                     <div
                       key={index}
-                      className={`${isPlayed ? (isFromMe ? 'bg-blue-300' : 'bg-blue-600') : (isFromMe ? 'bg-gray-300' : 'bg-blue-400')} rounded-sm flex-shrink-0 hover:opacity-80`}
+                      className={`${isPlayed ? (isFromMe ? 'bg-white' : 'bg-blue-600') : (isFromMe ? 'bg-gray-300' : 'bg-blue-400')} rounded-sm flex-shrink-0 hover:opacity-80`}
                       style={{ height: `${Math.max(1, (value / 255) * 16)}px`, width: '1px' }}
+                      onClick={() => {
+                        const audio = audioInstances.current.get(m.id);
+                        if (audio) {
+                          const seekTime = barProgress * (audio.duration || 0);
+                          const setSeek = () => {
+                            audio.currentTime = seekTime;
+                            setAudioProgress(prev => new Map(prev).set(m.id, barProgress));
+                            if (!isPlaying) {
+                              audio.play();
+                              setPlayingAudios(prev => new Map(prev).set(m.id, true));
+                            }
+                          };
+                          if (audio.readyState < 2) {
+                            audio.addEventListener('loadedmetadata', setSeek, { once: true });
+                          } else {
+                            setSeek();
+                          }
+                        }
+                      }}
                     />
                   );
                 })}
               </div>
-              <div className="flex flex-col items-end">
-                <span className={`text-sm font-medium ${isFromMe ? 'text-white' : 'text-gray-600'}`}>{m.file.duration_formatted || (m.file.duration ? Math.floor(m.file.duration / 60) + ':' + (m.file.duration % 60).toString().padStart(2, '0') : '')}</span>
-                {m.file.size && <span className={`text-xs ${isFromMe ? 'text-white/70' : 'text-gray-500'}`}>{typeof m.file.size === 'string' ? m.file.size : `${(m.file.size / 1024 / 1024).toFixed(1)} MB`}</span>}
+
+              {m.file.size && <span className={`text-xs ml-2 ${isFromMe ? 'text-white/70' : 'text-gray-500'}`}>{typeof m.file.size === 'string' ? m.file.size : `${(m.file.size / 1024 / 1024).toFixed(1)} MB`}</span>}
+
+              <div className="absolute bottom-1 right-1 z-10 bg-black/50 text-white text-[10px] px-1 rounded">
+                {new Date(m.at).toLocaleTimeString()}
               </div>
-            </div>
-            <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
-              {new Date(m.at).toLocaleTimeString()}
-              {isFromMe && m.is_outgoing && (
-                m.is_read ? (
-                  <CheckCheck className="h-3 w-3" />
-                ) : (
-                  <Check className="h-3 w-3" />
-                )
-              )}
-            </div>
           </div>
         );
       case "document":
@@ -772,7 +827,7 @@ export default function ChatWindow({
                      className={`w-fit max-w-[80%] ${m.file?.type === 'video_note' || m.file?.type === 'image' || m.file?.type === 'document' ? (isFromMe ? 'ml-auto' : '') : `relative rounded-lg px-3 py-2 text-sm text-white ${isFromMe ? `ml-auto bg-primary` : "bg-secondary"}`}`}
                      ref={isLastGroup && messageIndex === group.length - 1 ? lastMessageRef : null}
                    >
-                     {m.sender !== "me" && m.file && m.file.type !== 'video_note' && m.file.type !== 'image' && m.file.type !== 'document' ? (
+                     {m.sender !== "me" && m.file && m.file.type !== 'video_note' && m.file.type !== 'image' && m.file.type !== 'document' && m.file.type !== 'voice' && m.file.type !== 'audio' ? (
                        <div className="text-xs font-medium text-white mb-1">
                          {m.sender === "them" ? title : m.sender}
                        </div>
